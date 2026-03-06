@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('patients', function (Blueprint $table) {
+            $table->string('file_number')->nullable();
+            $table->string('blood_type')->nullable();
+            $table->string('gender')->nullable();
+            $table->integer('age')->nullable();
+            $table->string('address')->nullable();
+            $table->string('blood_pressure')->nullable();
+            $table->integer('pulse_rate')->nullable();
+            $table->float('temperature')->nullable();
+            $table->float('weight')->nullable();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('patients', function (Blueprint $table) {
+            //
+        });
+    }
+};
