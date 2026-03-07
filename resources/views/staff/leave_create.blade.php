@@ -105,12 +105,12 @@
         <!-- LEFT SIDE -->
         <div>
 
-            {{-- Current Pending Leave --}}
             @php
                 $currentLeave = $leaveRequests->where('status','pending')->first();
             @endphp
 
             @if($currentLeave)
+
                 <div class="card">
 
                     <h4>Current Leave Request Status</h4>
@@ -133,28 +133,30 @@
 </span>
 
                 </div>
+
             @endif
 
 
-            {{-- Errors --}}
             @if ($errors->any())
+
                 <div class="error">
+
                     @foreach ($errors->all() as $error)
                         <p>{{ $error }}</p>
                     @endforeach
+
                 </div>
+
             @endif
 
 
-            <!-- FORM -->
-
             <form method="POST" action="{{ route('staff.leave.store') }}">
-                @csrf
 
+                @csrf
 
                 <label>Request For</label>
 
-                <select name="type">
+                <select id="typeSelect" name="type">
 
                     <option value="">Select</option>
                     <option value="doctor">Doctor</option>
@@ -165,45 +167,42 @@
 
                 <label>Select Name</label>
 
-                <select name="staff_id">
+                <select id="staffSelect" name="staff_id">
 
-                    <optgroup label="Doctors">
+                    <option value="">Select staff</option>
 
-                        @foreach($doctors as $doctor)
+                    @foreach($doctors as $doctor)
 
-                            <option value="doctor-{{ $doctor->id }}">
-                                {{ $doctor->name }}
-                            </option>
+                        <option value="{{ $doctor->id }}" data-type="doctor" style="display:none;">
+                            {{ $doctor->name }}
+                        </option>
 
-                        @endforeach
-
-                    </optgroup>
+                    @endforeach
 
 
-                    <optgroup label="Nurses">
+                    @foreach($nurses as $nurse)
 
-                        @foreach($nurses as $nurse)
+                        <option value="{{ $nurse->id }}" data-type="nurse" style="display:none;">
+                            {{ $nurse->name }}
+                        </option>
 
-                            <option value="nurse-{{ $nurse->id }}">
-                                {{ $nurse->name }}
-                            </option>
-
-                        @endforeach
-
-                    </optgroup>
+                    @endforeach
 
                 </select>
 
 
                 <label>Start Date</label>
+
                 <input type="date" name="start_date" value="{{ old('start_date') }}">
 
 
                 <label>End Date</label>
+
                 <input type="date" name="end_date" value="{{ old('end_date') }}">
 
 
                 <label>Reason for Leave</label>
+
                 <textarea name="reason">{{ old('reason') }}</textarea>
 
 
@@ -258,6 +257,29 @@
     </div>
 
 </div>
+
+
+<script>
+
+    const typeSelect = document.getElementById('typeSelect');
+    const staffSelect = document.getElementById('staffSelect');
+    const options = staffSelect.querySelectorAll('option[data-type]');
+
+    typeSelect.addEventListener('change', function(){
+
+        const type = this.value;
+
+        options.forEach(option => {
+
+            option.style.display = option.dataset.type === type ? 'block' : 'none';
+
+        });
+
+        staffSelect.value='';
+
+    });
+
+</script>
 
 </body>
 </html>

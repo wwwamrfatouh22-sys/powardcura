@@ -1,6 +1,5 @@
 <?php
 
-
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComplaintController;
@@ -84,6 +83,8 @@ Route::prefix('staff')->group(function () {
         Route::post('/complaints/{id}/resolve', [StaffComplaintController::class,'resolve'])->name('staff.complaint.resolve');
         Route::post('/complaints/{id}/escalate', [StaffComplaintController::class,'escalate'])->name('staff.complaint.escalate');
         Route::post('/logout', function () {Auth::guard('staff')->logout();return redirect('/');})->name('staff.logout');
+        Route::get('/leave/create',[StaffLeaveController::class,'create'])->name('staff.leave.create');
+        Route::post('/leave/store',[StaffLeaveController::class,'store'])->name('staff.leave.store');
     });
 });
 
@@ -104,7 +105,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::post('/logout', [NurseAuthController::class, 'logout'])->name('logout');
+Route::post('/logout', [NurseAuthController::class, 'logout'])->name('nurse.logout');
 
 Route::get('/medical-positions',[JobController::class,'medical'])->name('jobs.medical');
 Route::get('/jobs/{id}/apply', [JobApplicationController::class, 'create'])->name('jobs.apply');

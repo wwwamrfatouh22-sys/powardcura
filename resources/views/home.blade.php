@@ -185,11 +185,6 @@
                         </li>
                         <li>
                             <a class="dropdown-item" href="#">
-                                Administrative positions
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#">
                                 Training
                             </a>
                         </li>

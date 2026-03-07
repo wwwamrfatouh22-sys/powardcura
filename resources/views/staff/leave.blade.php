@@ -188,6 +188,7 @@
             border-radius:25px;
             padding:10px 22px;
             border:none;
+            cursor:pointer;
         }
 
         .card-box{
@@ -247,7 +248,7 @@
     </div>
 </div>
 
-<!-- Sidebar Main -->
+<!-- Sidebar -->
 
 <div class="sidebar" id="mainSidebar">
 
@@ -256,39 +257,30 @@
     </div>
 
     <div class="menu-links">
-        <a class="active-link">Dashboard</a>
-        <a>Doctors</a>
-        <a>Patients</a>
-        <a>Leave Requests</a>
+
+        <a class="active-link">Leave Requests</a>
+
+        <a href="{{ route('staff.medical.positions') }}">
+            Medical Positions
+        </a>
+
+        <a href="{{ route('staff.administrative.positions') }}">
+            Administrative Positions
+        </a>
+
+        <a href="{{ route('staff.training.programs') }}">
+            Training Programs
+        </a>
+
+        <a href="{{ route('staff.complaints') }}">
+            Complaints
+        </a>
 
         <form method="POST" action="{{ route('staff.logout') }}">
             @csrf
             <button class="logout-btn">Logout</button>
         </form>
-    </div>
 
-</div>
-
-<!-- Sidebar Leave -->
-
-<div class="sidebar" id="leaveSidebar">
-
-    <div class="logo-container">
-        <img src="{{ asset('images/logo_Image.png') }}">
-    </div>
-
-    <div class="menu-links">
-        <a class="active-link">Leave Requests</a>
-        <a href="{{ route('staff.medical.positions') }}">Medical Positions</a>
-        <a href="{{ route('staff.administrative.positions') }}">
-            Administrative Positions
-        </a>
-        <a href="{{ route('staff.training.programs') }}">
-            Training Programs
-        </a>
-        <a href="{{ route('staff.complaints') }}">
-            Complaints
-        </a>
     </div>
 
 </div>
@@ -300,18 +292,19 @@
     <div class="header-top">
 
         <div class="logo-area">
+
             <div class="menu-icon" onclick="toggleSidebar()">☰</div>
 
             <div>
                 <h3 class="logo-title">NUH</h3>
                 <span class="sub-title">Administrative Dashboard</span>
             </div>
+
         </div>
 
-        <button class="btn-add" onclick="activateLeaveMode()">
+        <a href="{{ route('staff.leave.create') }}" class="btn-add">
             + Add New Leave Request
-        </button>
-
+        </a>
     </div>
 
 </div>
@@ -343,6 +336,7 @@
             @foreach($leaveRequests as $request)
 
                 <tr>
+
                     <td>{{ $request->doctor->name ?? '-' }}</td>
                     <td>{{ $request->doctor->department->name_en ?? '-' }}</td>
                     <td>{{ $request->start_date }}</td>
@@ -377,19 +371,12 @@
 
 <script>
 
-    let leaveMode = false;
-
-    function activateLeaveMode(){
-        leaveMode = true;
-    }
-
     function toggleSidebar(){
 
-        const sidebar = leaveMode
-            ? document.getElementById("leaveSidebar")
-            : document.getElementById("mainSidebar");
+        const sidebar = document.getElementById("mainSidebar");
 
         sidebar.classList.toggle("active");
+
         document.querySelector('.overlay').classList.toggle('active');
 
     }
@@ -397,7 +384,6 @@
     function closeSidebar(){
 
         document.getElementById("mainSidebar").classList.remove("active");
-        document.getElementById("leaveSidebar").classList.remove("active");
 
         document.querySelector('.overlay').classList.remove('active');
 
