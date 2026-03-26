@@ -22,7 +22,9 @@ class Patient extends Authenticatable
         'blood_pressure',
         'pulse_rate',
         'temperature',
-        'weight'
+        'weight',
+        'medical_condition',
+        'last_visit'
     ];
     protected $guarded = ['id'];
 

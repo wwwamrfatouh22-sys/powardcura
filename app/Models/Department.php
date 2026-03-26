@@ -11,6 +11,10 @@ class Department extends Model
         'name_en',
         'name_ar',
         'image',
+        'doctor_id',
+        'head_name',
+        'status',
+
     ];
 
     protected $guarded = ['id'];
@@ -18,5 +22,9 @@ class Department extends Model
     public function doctors()
     {
         return $this->hasMany(Doctor::class);
+    }
+    public function doctor()
+    {
+        return $this->belongsTo(\App\Models\Doctor::class);
     }
 }

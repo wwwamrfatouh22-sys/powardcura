@@ -1,5 +1,12 @@
 <?php
-
+use App\Http\Controllers\Admin\RoomController;
+use App\Http\Controllers\AdminAppointmentController;
+use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminDepartmentController;
+use App\Http\Controllers\AdminDoctorController;
+use App\Http\Controllers\AdminPatientController;
+use App\Http\Controllers\AdminRoomController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComplaintController;
@@ -104,13 +111,54 @@ Route::middleware('auth')->group(function () {
  Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
 });
 
+// ## Admin Routes
+Route::get('/admin/login', [AdminAuthController::class,'showLogin'])->name('admin.login');
+Route::post('/admin/login', [AdminAuthController::class,'login'])->name('admin.login.submit');
+Route::middleware('auth:admin')->group(function(){
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/admin/appointments', [AdminAppointmentController::class,'index'])->name('admin.appointments');
+    Route::post('/admin/appointments/store',[AdminAppointmentController::class,'store'])->name('admin.appointments.store');
+
+    Route::get('/admin/appointments/edit/{id}', [AdminAppointmentController::class, 'edit'])->name('admin.appointments.edit');
+    Route::put('/admin/appointments/update/{id}', [AdminAppointmentController::class, 'update'])->name('admin.appointments.update');
+    Route::delete('/admin/appointments/delete/{id}', [AdminAppointmentController::class, 'delete'])->name('admin.appointments.delete');
+
+    Route::get('/admin/patients', [AdminPatientController::class, 'index'])->name('admin.patients');
+    Route::delete('/admin/patients/{id}', [AdminPatientController::class, 'destroy'])->name('admin.patients.delete');
+    Route::get('/admin/patients/{id}/edit', [AdminPatientController::class, 'edit'])->name('admin.patients.edit');
+    Route::post('/admin/patients/{id}/update', [AdminPatientController::class, 'update'])->name('admin.patients.update');
+    Route::get('/admin/patients/create', [AdminPatientController::class, 'create'])->name('admin.patients.create');
+    Route::post('/admin/patients/store', [AdminPatientController::class, 'store'])->name('admin.patients.store');
+    Route::get('/admin/doctors', [AdminDoctorController::class, 'index'])->name('admin.doctors');
+    Route::get('/admin/doctors/create', [AdminDoctorController::class, 'create'])->name('admin.doctors.create');
+    Route::post('/admin/doctors/store', [AdminDoctorController::class, 'store'])->name('admin.doctors.store');
+    Route::get('/admin/doctors/edit/{id}', [AdminDoctorController::class, 'edit'])->name('admin.doctors.edit');
+    Route::post('/admin/doctors/update/{id}', [AdminDoctorController::class, 'update'])->name('admin.doctors.update');
+    Route::delete('/admin/doctors/delete/{id}', [AdminDoctorController::class, 'destroy'])->name('admin.doctors.delete');
+    Route::get('/admin/rooms', [AdminRoomController::class, 'index'])->name('admin.rooms');
+    Route::get('/admin/rooms/create', [AdminRoomController::class, 'create'])->name('admin.rooms.create');
+    Route::post('/rooms/store', [AdminRoomController::class, 'store'])->name('admin.rooms.store');
+    Route::get('/admin/rooms/edit/{id}', [AdminRoomController::class, 'edit'])->name('admin.rooms.edit');
+    Route::post('/rooms/{id}/update', [AdminRoomController::class, 'update'])->name('admin.rooms.update');
+    Route::delete('/admin/rooms/delete/{id}', [AdminRoomController::class, 'destroy'])->name('admin.rooms.delete');
+
+    Route::get('/admin/departments', [AdminDepartmentController::class, 'index'])->name('admin.departments');
+    Route::get('/admin/departments/create', [AdminDepartmentController::class, 'create'])->name('admin.departments.create');
+    Route::post('/admin/departments/store', [AdminDepartmentController::class, 'store'])->name('admin.departments.store');
+
+    Route::get('/admin/departments/edit/{id}', [AdminDepartmentController::class, 'edit'])->name('admin.departments.edit');
+    Route::post('/admin/departments/update/{id}', [AdminDepartmentController::class, 'update'])->name('admin.departments.update');
+    Route::delete('/admin/departments/delete/{id}', [AdminDepartmentController::class, 'destroy'])->name('admin.departments.delete');
+
+});
+
+
+
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/logout', [NurseAuthController::class, 'logout'])->name('nurse.logout');
-
 Route::get('/medical-positions',[JobController::class,'medical'])->name('jobs.medical');
 Route::get('/jobs/{id}/apply', [JobApplicationController::class, 'create'])->name('jobs.apply');
 Route::post('/jobs/apply', [JobApplicationController::class, 'store'])->name('jobs.apply.store');
-
 Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
 Route::get('/departments/{department}', [DepartmentController::class, 'show'])->name('departments.show');
 Route::get('/doctors/{doctor}', [DoctorController::class, 'show'])->name('doctors.show');

@@ -19,7 +19,8 @@ class Doctor extends Authenticatable
         'image',
         'experience',
         'rating',
-        'department_id'
+        'department_id',
+        'status'
     ];
 
     protected $hidden = [

@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             MedicalPositionSeeder::class,
             TrainingProgramSeeder::class,
             ComplaintSeeder::class,
+            AdminSeeder::class,
 
         ]);
     }

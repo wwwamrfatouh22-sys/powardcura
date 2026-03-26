@@ -8,18 +8,19 @@ class Appointment extends Model
 {
     protected $table = 'appointments';
     protected $fillable = [
+        'patient_id',
         'doctor_id',
+        'date',
+        'time',
+        'status',
         'first_name',
         'last_name',
         'email',
         'phone',
         'reason',
-        'time',
-        'date',
         'payment_method',
         'type'
     ];
-
     protected $guarded = ['id'];
 
     public function doctor()

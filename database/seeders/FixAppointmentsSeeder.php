@@ -5,16 +5,17 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Appointment;
 use App\Models\Patient;
-use App\Models\Department;
+use App\Models\Doctor;
+use Carbon\Carbon;
 
 class FixAppointmentsSeeder extends Seeder
 {
     public function run(): void
     {
         $patients = Patient::all();
-        $departments = Department::all();
+        $doctors  = Doctor::all();
 
-        if ($patients->isEmpty() || $departments->isEmpty()) {
+        if ($patients->isEmpty() || $doctors->isEmpty()) {
             return;
         }
 
@@ -24,19 +25,28 @@ class FixAppointmentsSeeder extends Seeder
 
             $appointment->update([
 
-                // يملى patient_id لو فاضي بس
                 'patient_id' => $appointment->patient_id
-                    ?? $patients->random()->id,
+                    ?: $patients->random()->id,
 
-                // يملى department_id لو فاضي بس
-                'department_id' => $appointment->department_id
-                    ?? $departments->random()->id,
+                'doctor_id' => $appointment->doctor_id
+                    ?: $doctors->random()->id,
 
-                // يملى status لو فاضي بس
+                'date' => $appointment->date
+                    ?: Carbon::now()->addDays(rand(1,30))->toDateString(),
+
+                'time' => $appointment->time
+                    ?: collect([
+                        '09:00',
+                        '10:00',
+                        '11:00',
+                        '12:00',
+                        '13:00'
+                    ])->random(),
+
                 'status' => $appointment->status
-                    ?? collect([
-                        'Confirmed',
+                    ?: collect([
                         'Pending',
+                        'Confirmed',
                         'Completed'
                     ])->random(),
             ]);
