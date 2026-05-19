@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StaffloginRequest;
-use Illuminate\Http\Request;
+use App\Support\AuditLogger;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
 class StaffAuthController extends Controller
 {
@@ -17,9 +16,17 @@ class StaffAuthController extends Controller
     public function login(StaffloginRequest $request)
     {
         $credentials = $request->only('email', 'password');
+        $credentials['status'] = 'active';
+
         if (auth()->guard('staff')->attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->route('staff.leave.index');
+            AuditLogger::log('login.success', null, ['role' => 'staff']);
+
+            if (in_array(auth()->guard('staff')->user()?->role, ['radiology_lab', 'radiology', 'laboratory', 'lab'], true)) {
+                return redirect()->route('staff.radiology_lab');
+            }
+
+            return redirect()->route('staff.dashboard');
         }
 
         return back()->withErrors([
@@ -29,6 +36,7 @@ class StaffAuthController extends Controller
 
     public function logout()
     {
+        AuditLogger::log('logout', null, ['role' => 'staff']);
         Auth::guard('staff')->logout();
         return redirect('/');
 

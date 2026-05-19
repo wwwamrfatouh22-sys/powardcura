@@ -23,9 +23,7 @@ class StoreLeaveRequest extends FormRequest
     {
         return [
 
-            'type' => 'required|in:doctor,nurse',
-
-            'staff_id' => 'required|integer',
+            'doctor_id' => 'required|exists:doctors,id',
 
             'start_date' => 'required|date|before_or_equal:today',
 
@@ -41,9 +39,9 @@ class StoreLeaveRequest extends FormRequest
     {
         return [
 
-            'staff_id.required' => 'Please select a doctor or nurse.',
+            'doctor_id.required' => 'Please select a doctor.',
 
-            'staff_id.integer' => 'Invalid staff selection.',
+            'doctor_id.exists' => 'Invalid doctor selection.',
 
             'start_date.before_or_equal' => 'Start date cannot be after today.',
 

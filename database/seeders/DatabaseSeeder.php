@@ -27,7 +27,6 @@ class DatabaseSeeder extends Seeder
             MedicalResultsSeeder::class,
             PatientSeeder::class,
             JobSeeder::class,
-            NurseSeeder::class,
             AppointmentSeeder::class,
             ReportSeeder::class,
             FixAppointmentsSeeder::class,

@@ -1,116 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Staff Login - NUH</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+@extends('layouts.auth')
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+@section('title', 'Staff Login - NUH')
 
-    <style>
-        body {
-            background: linear-gradient(90deg, #94c1e9 0%, #ffffff 50%, #94c1e9 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            font-family: sans-serif;
-        }
+@section('content')
+<div class="card auth-card">
+    <div class="card-body">
+        <img src="{{ asset('images/image.png') }}" class="auth-logo" alt="NUH Logo">
+        <h1 class="auth-title">Staff Login</h1>
 
-        .login-card {
-            background: white;
-            width: 100%;
-            max-width: 750px;
-            padding: 60px 80px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-        }
-
-        .logo-box {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
-        .logo-box img {
-            height: 70px;
-        }
-
-        .form-label {
-            font-weight: 600;
-            color: #444;
-            margin-bottom: 10px;
-        }
-
-        .form-control {
-            border: 1.5px solid #a5c1d6;
-            border-radius: 12px;
-            padding: 14px 15px;
-            margin-bottom: 35px;
-        }
-
-        .btn-login {
-            background-color: #154484;
-            color: white;
-            border-radius: 12px;
-            padding: 14px;
-            width: 100%;
-            font-size: 18px;
-            font-weight: bold;
-            border: none;
-            transition: 0.3s;
-        }
-
-        .btn-login:hover {
-            background-color: #0f3363;
-            transform: translateY(-2px);
-        }
-
-        .error-message {
-            color: red;
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
-
-<div class="login-card">
-
-    <div class="logo-box">
-        <img src="{{ asset('images/image.png') }}" alt="NUH Logo">
-    </div>
-
-    {{-- Error Message --}}
     @if ($errors->any())
-        <div class="error-message">
+        <div class="alert alert-danger py-2">
             {{ $errors->first() }}
         </div>
     @endif
 
-    <form method="POST" action="{{ route('staff.login.submit') }}">
+    <form method="POST" action="{{ route('staff.login.submit') }}" class="auth-form">
         @csrf
 
-        <label class="form-label">Email</label>
-        <input type="email"
-               name="email"
-               value="{{ old('email') }}"
-               class="form-control"
-               placeholder="Enter your email"
-               required>
+        <div>
+            <label class="form-label" for="email">Email</label>
+            <input type="email"
+                   id="email"
+                   name="email"
+                   value="{{ old('email') }}"
+                   class="form-control form-control-lg"
+                   placeholder="Enter your email"
+                   required>
+        </div>
 
-        <label class="form-label">Password</label>
-        <input type="password"
-               name="password"
-               class="form-control"
-               placeholder="Enter your password"
-               required>
+        <div>
+            <label class="form-label" for="password">Password</label>
+            <input type="password"
+                   id="password"
+                   name="password"
+                   class="form-control form-control-lg"
+                   placeholder="Enter your password"
+                   required>
+        </div>
 
-        <button type="submit" class="btn-login">
+        <button type="submit" class="btn btn-auth btn-lg btn-primary w-100">
             Log in
         </button>
     </form>
-
+    </div>
 </div>
-
-</body>
-</html>
+@endsection

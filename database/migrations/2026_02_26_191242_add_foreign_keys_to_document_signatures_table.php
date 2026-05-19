@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::table('document_signatures', function (Blueprint $table) {
             $table->foreign('doctor_id')->references('id')->on('doctors')->onDelete('cascade');
-            $table->foreign('document_id')->references('id')->on('documents')->onDelete('cascade');
         });
     }
 
@@ -24,7 +23,6 @@ return new class extends Migration
     {
         Schema::table('document_signatures', function (Blueprint $table) {
             $table->dropForeign(['doctor_id']);
-            $table->dropForeign(['document_id']);
         });
     }
 };

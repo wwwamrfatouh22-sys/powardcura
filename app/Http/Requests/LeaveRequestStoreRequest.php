@@ -23,9 +23,7 @@ class LeaveRequestStoreRequest extends FormRequest
     {
         return [
 
-            'type' => 'required|in:doctor,nurse',
-
-            'staff_id' => 'required|integer',
+            'doctor_id' => 'required|exists:doctors,id',
 
             'start_date' => 'required|date',
 

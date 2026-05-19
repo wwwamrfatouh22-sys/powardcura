@@ -9,7 +9,7 @@ class MedicalDepartmentsController extends Controller
 {
     public function index()
     {
-        $departments = Department::all();
+        $departments = Department::orderBy('name_en')->get();
         return view('medicaldepartments', compact('departments'));
     }
     public function show(Department $department)

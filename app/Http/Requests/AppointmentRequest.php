@@ -22,16 +22,15 @@ class AppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-
-                'doctor_id' => 'required|exists:doctors,id',
-                'first_name' => 'required|string|max:100',
-               'last_name' => 'required|string|max:100',
-              'email' => 'required|email|max:255',
-             'phone' => 'nullable|digits:11',
-             'reason' => 'nullable|string|max:1000',
-             'time' => 'required',
+            'doctor_id' => 'required|exists:doctors,id',
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|digits:11',
+            'reason' => 'nullable|string|max:1000',
+            'time' => 'required',
+            'date' => 'nullable|date',
             'type' => 'required|in:hospital,private',
-            'payment_method' => 'required'
         ];
     }
 }

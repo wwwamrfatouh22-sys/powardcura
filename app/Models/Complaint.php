@@ -11,10 +11,13 @@ class Complaint extends Model
         'name',
         'email',
         'phone',
+        'subject',
         'type',
         'department',
         'details',
+        'status',
+        'priority',
     ];
-    protected $guarded = ['id'];
 
+    protected $guarded = ['id'];
 }

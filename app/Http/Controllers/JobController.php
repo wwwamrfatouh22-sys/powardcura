@@ -3,14 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\Job;
-use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class JobController extends Controller
 {
-    public function medical()
+    public function index(): View
     {
-        $jobs = Job::where('type', 'medical')->latest()->get();
+        $jobs = Job::query()
+            ->where('status', 'active')
+            ->latest()
+            ->get();
 
-        return view('jobs.medical', compact('jobs'));
+        $medicalJobs = $jobs->filter(fn (Job $job) => $job->type === 'medical')->values();
+        $administrativeJobs = $jobs->filter(fn (Job $job) => in_array($job->type, ['administrative', 'admin'], true))->values();
+
+        return view('jobs.medical', compact('medicalJobs', 'administrativeJobs'));
+    }
+
+    public function show(Job $job): View
+    {
+        return view('jobs.show', compact('job'));
+    }
+
+    public function medical(): View
+    {
+        return $this->index();
     }
 }

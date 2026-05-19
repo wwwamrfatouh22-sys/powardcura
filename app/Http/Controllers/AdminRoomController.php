@@ -4,13 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Patient;
 use App\Models\Room;
+use App\Support\DeletionGuard;
+use App\Support\TableFilters;
 use Illuminate\Http\Request;
 
 class AdminRoomController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $rooms = Room::with('patient')->get();
+        $rooms = Room::query()->with('patient');
+
+        TableFilters::apply($rooms, $request, [
+            'date_column' => 'created_at',
+            'type_column' => 'type',
+            'status_column' => 'status',
+        ]);
+
+        $rooms = $rooms->paginate(10)->appends($request->query());
+
         return view('admin.rooms', compact('rooms'));
     }
 
@@ -58,7 +69,8 @@ class AdminRoomController extends Controller
     }
     public function destroy($id)
     {
-        Room::findOrFail($id)->delete();
+        $room = Room::findOrFail($id);
+        DeletionGuard::deleteOne($room, 'room.deleted', ['source' => 'admin']);
 
         return redirect()->route('admin.rooms')
             ->with('success', 'Room deleted successfully');

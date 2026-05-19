@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->isLocale('ar') ? 'rtl' : 'ltr' }}">
 <head>
     <title>Complaints</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -123,19 +123,26 @@
 
         <div class="row mb-4">
             <div class="col-md-6">
-                <label>Type of complaint</label>
-                <input type="text" name="type" class="form-control">
+                <label>Complaint subject</label>
+                <input type="text" name="subject" class="form-control" value="{{ old('subject') }}">
             </div>
 
             <div class="col-md-6">
+                <label>Type of complaint</label>
+                <input type="text" name="type" class="form-control" value="{{ old('type') }}">
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
                 <label>The relevant department or entity</label>
-                <input type="text" name="department" class="form-control">
+                <input type="text" name="department" class="form-control" value="{{ old('department') }}">
             </div>
         </div>
 
         <div class="mb-4">
             <label>Details of the complaint</label>
-            <textarea name="details" class="form-control"></textarea>
+            <textarea name="details" class="form-control">{{ old('details') }}</textarea>
         </div>
 
         <button class="btn-send">send</button>

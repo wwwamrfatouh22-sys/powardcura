@@ -22,12 +22,20 @@ class StoreAppointmentAdminRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'patient_id' => 'required|exists:patients,id',
+            'patient_id' => 'nullable|exists:patients,id',
             'doctor_id'  => 'required|exists:doctors,id',
-            'date'       => 'required|date',
-            'time'       => 'required',
-            'status'     => 'required|in:Pending,Confirmed,Completed',
-
+            'department_id' => 'nullable|exists:departments,id',
+            'first_name' => 'required_without:patient_id|nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'reason' => 'nullable|string|max:1000',
+            'date' => 'required|date',
+            'time' => 'required',
+            'status' => 'required|in:Pending,Confirmed,Completed,Canceled',
+            'type' => 'nullable|in:hospital,private',
+            'payment_method' => 'nullable|string|max:100',
+            'payment_status' => 'nullable|in:pending,confirmed,paid,failed,canceled',
         ];
     }
 }

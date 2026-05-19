@@ -15,7 +15,7 @@ Hospital Management System built with Laravel.
 - Laravel
 - Blade
 - Bootstrap
-- SQLite
+- MySQL
 
 ## How to Run
 

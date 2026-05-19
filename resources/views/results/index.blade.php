@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->isLocale('ar') ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Radiology Results</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>{{ __('ui.nav.radiology') }}</title>
+    <link href="{{ app()->isLocale('ar') ? 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css' : 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root { --main-blue: #002147; }
-        body { margin: 0; padding: 0; background: #f4f7fb; }
+        body { margin: 0; padding: 0; background: #f4f7fb; font-family: {{ app()->isLocale('ar') ? "'Cairo', Arial, sans-serif" : "'Inter', Arial, sans-serif" }}; text-align: {{ app()->isLocale('ar') ? 'right' : 'left' }}; }
 
         .navbar { background-color: var(--main-blue); padding: 10px 20px; }
         .navbar-brand { display: flex; align-items: center; color: white !important; font-weight: bold; font-size: 24px; }
@@ -91,16 +92,13 @@
                 <li class="nav-item"><a class="nav-link" href="#">Jobs and Training</a></li>
                 <li class="nav-item"><a class="nav-link" href="#">Contact us</a></li>
 
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('results.index') }}">Radiology & Lab Tests</a>
-                </li>
             </ul>
         </div>
 
         <div class="d-flex align-items-center">
             <a href="#" class="nav-link small">العربية</a>
 
-            @auth
+            @auth('patient')
                 <form action="{{ route('logout') }}" method="POST" class="ms-3">
                     @csrf
                     <button type="submit" style="background:none;border:none;color:white;font-size:15px;">
@@ -142,6 +140,7 @@
 
         {{-- بعد البحث: عرض النتائج --}}
         @if(isset($patient) && $patient)
+            @php($downloadRoute = auth('admin')->check() ? 'admin.results.download' : 'results.download')
 
             {{-- Patient Information --}}
             <div class="card-soft p-5 mb-4">
@@ -196,7 +195,7 @@
                                 </div>
 
                                 <a class="btn btn-outline-primary"
-                                   href="{{ route('results.download', ['type' => 'lab', 'id' => $t->id]) }}">
+                                   href="{{ route($downloadRoute, ['type' => 'lab', 'id' => $t->id]) }}">
                                     Download
                                 </a>
                             </div>
@@ -218,7 +217,7 @@
                                 </div>
 
                                 <a class="btn btn-outline-primary"
-                                   href="{{ route('results.download', ['type' => 'radio', 'id' => $r->id]) }}">
+                                   href="{{ route($downloadRoute, ['type' => 'radio', 'id' => $r->id]) }}">
                                     Download
                                 </a>
                             </div>

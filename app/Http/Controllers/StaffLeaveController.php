@@ -3,18 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LeaveRequestStoreRequest;
-use App\Models\Doctor;
 use App\Models\LeaveRequest;
-use App\Models\Nurse;
 use App\Models\StaffLeaveRequest;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 
 class StaffLeaveController extends Controller
 {
-    public function index()
+    public function index(): RedirectResponse
     {
-        $leaveRequests = LeaveRequest::with('doctor')->get();
-        return view('staff.leave', compact('leaveRequests'));
+        return redirect()->route('staff.dashboard');
     }
     public function approve($id)
     {
@@ -30,12 +27,9 @@ class StaffLeaveController extends Controller
         $leaveRequest->update(['status' => 'rejected']);
         return back()->with('ok', 'Rejected');
     }
-    public function create()
+    public function create(): RedirectResponse
     {
-        $doctors = Doctor::all();
-        $nurses = Nurse::all();
-        $leaveRequests = LeaveRequest::all();
-        return view('staff.leave_create',compact('doctors','nurses','leaveRequests'));
+        return redirect()->route('staff.dashboard');
     }
     public function store(LeaveRequestStoreRequest $request)
     {

@@ -3,23 +3,30 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TrainingProgram extends Model
 {
-     protected $fillable = [
-    'name',
-    'age',
-    'gender',
-    'phone',
-    'university',
-    'department_id',
-    'cv',
-    'gpa',
-    'status'
-];
+    protected $fillable = [
+        'title',
+        'description',
+        'duration_weeks',
+        'department_id',
+        'is_active',
+    ];
 
-    public function department()
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(TrainingRegistration::class, 'training_id');
     }
 }

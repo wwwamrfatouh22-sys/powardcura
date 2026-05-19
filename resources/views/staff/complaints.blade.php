@@ -1,19 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->isLocale('ar') ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <title>Complaints Management</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
 
         body{
             margin:0;
-            font-family:'Segoe UI',sans-serif;
+            font-family:Arial, Helvetica, sans-serif;
             background:linear-gradient(135deg,#cfe6ff,#2a82c9);
             min-height:100vh;
+        }
+
+        .card-soft {
+            border: 0;
+            border-radius: 18px;
+            box-shadow: 0 16px 35px rgba(0,0,0,0.12);
+        }
+
+        .nav-chip {
+            border-radius:999px;
+            padding:8px 14px;
+            font-size:13px;
+            border:1px solid #d9e3ef;
+            background:#fff;
+            text-decoration:none;
+            color:#0b3a78;
+        }
+
+        .nav-chip.active {
+            background:#0b3a78;
+            color:#fff;
+            border-color:#0b3a78;
         }
 
         /* Sidebar */
@@ -191,35 +213,36 @@
             border-radius:20px;
         }
 
-        /* Status */
+        .status-badge, .priority-badge {
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
 
         .status-pending{
-            background:#f1c0c0;
-            padding:6px 12px;
-            border-radius:20px;
+            background:#fff2cc;
+            color:#7a5600;
         }
 
         .status-progress{
-            background:#f3e4b5;
-            padding:6px 12px;
-            border-radius:20px;
+            background:#d9ecff;
+            color:#0b3a78;
         }
 
         .status-resolved{
-            background:#c7e7c7;
-            padding:6px 12px;
-            border-radius:20px;
+            background:#d9f5df;
+            color:#1d6b2a;
+        }
+
+        .message-cell {
+            min-width: 260px;
+            max-width: 420px;
+            white-space: normal;
         }
 
         /* Buttons */
-
-        .btn-view{
-            background:#154484;
-            color:white;
-            border-radius:25px;
-            padding:6px 18px;
-            border:none;
-        }
 
         .btn-resolve{
             background:#2ecc71;
@@ -253,12 +276,7 @@
     </div>
 
     <div class="menu-links">
-
-        <a href="{{ route('staff.leave.index') }}">Leave Requests</a>
-
         <a href="{{ route('staff.medical.positions') }}">Medical Positions</a>
-
-        <a href="{{ route('staff.administrative.positions') }}">Administrative Positions</a>
 
         <a href="{{ route('staff.training.programs') }}">Training Programs</a>
 
@@ -280,7 +298,7 @@
 
         <div>
             <h3 class="logo-title">NUH</h3>
-            <span class="sub-title">Administrative Dashboard</span>
+            <span class="sub-title">Staff Dashboard</span>
         </div>
 
     </div>
@@ -345,8 +363,6 @@
                     </td>
 
                     <td class="d-flex gap-2">
-
-                        <button class="btn-view">View</button>
 
                         <form method="POST" action="{{ route('staff.complaint.resolve',$complaint->id) }}">
                             @csrf

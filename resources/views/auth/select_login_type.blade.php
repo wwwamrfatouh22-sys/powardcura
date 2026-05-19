@@ -1,180 +1,111 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Select Login Type</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+@extends('layouts.auth')
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+@section('title', 'Select Login Type - NUH')
+@section('auth_col_class', 'col-12 col-md-10 col-lg-8')
 
-<style>
+@push('head')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+@endpush
 
-body{
-margin:0;
-font-family:Arial, sans-serif;
-background:linear-gradient(135deg,#5dade2,#1e69de);
-display:flex;
-justify-content:center;
-align-items:center;
-min-height:100vh;
-padding:40px 20px;
-}
+@push('styles')
+    <style>
+        .login-type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
 
-.container{
-background:#f3f4f6;
-padding:40px;
-border-radius:25px;
-width:100%;
-max-width:1000px;
-text-align:center;
-box-shadow:0 20px 40px rgba(0,0,0,0.1);
-}
+        .login-type-card {
+            display: block;
+            height: 100%;
+            padding: 24px 18px;
+            color: #1f2d3d;
+            text-align: center;
+            text-decoration: none;
+            border: 1px solid #e8edf4;
+            border-radius: 14px;
+            background: #fff;
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+        }
 
-h2{
-margin-bottom:35px;
-font-weight:bold;
-}
+        .login-type-card:hover,
+        .login-type-card:focus {
+            color: #1f2d3d;
+            border-color: #b9cfe6;
+            box-shadow: 0 10px 24px rgba(21, 68, 132, 0.12);
+            transform: translateY(-3px);
+        }
 
-.grid{
-display:grid;
-grid-template-columns:repeat(2,1fr);
-gap:30px;
-}
+        .login-type-icon {
+            width: 54px;
+            height: 54px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            border-radius: 14px;
+            background: #eaf1f8;
+            color: #154484;
+            font-size: 22px;
+        }
 
-@media(max-width:768px){
-.grid{
-grid-template-columns:1fr;
-}
-}
+        .login-type-card h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
 
-.card{
-background:#ffffff;
-padding:35px 20px;
-border-radius:18px;
-text-decoration:none;
-color:#000;
-box-shadow:0 6px 15px rgba(0,0,0,0.08);
-transition:0.3s;
-}
+        .login-type-card p {
+            color: #667085;
+            font-size: .9rem;
+            margin: 0;
+        }
 
-.card:hover{
-transform:translateY(-6px);
-}
+        @media (max-width: 767.98px) {
+            .login-type-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+@endpush
 
-.icon-box{
-width:65px;
-height:65px;
-background:#e5e7eb;
-border-radius:15px;
-margin:0 auto 20px;
-display:flex;
-align-items:center;
-justify-content:center;
-}
+@section('content')
+<div class="card auth-card">
+    <div class="card-body">
+        <img src="{{ asset('images/image.png') }}" class="auth-logo" alt="NUH Logo">
+        <h1 class="auth-title">Select Login Type</h1>
 
-.icon-box i{
-font-size:24px;
-color:#1e3a8a;
-}
+        <div class="login-type-grid">
+            <a href="{{ route('patient.login') }}" class="login-type-card">
+                <span class="login-type-icon"><i class="fa-regular fa-user"></i></span>
+                <h2>Login as Patient</h2>
+                <p>Access medical records and appointments</p>
+            </a>
 
-.card h3{
-margin:10px 0;
-}
+            <a href="{{ route('doctor.login') }}" class="login-type-card">
+                <span class="login-type-icon"><i class="fa-solid fa-user-doctor"></i></span>
+                <h2>Login as Doctor</h2>
+                <p>Manage patients and medical procedures</p>
+            </a>
 
-.card p{
-font-size:14px;
-color:#555;
-}
+            <a href="{{ route('staff.login') }}" class="login-type-card">
+                <span class="login-type-icon"><i class="fa-solid fa-user-tie"></i></span>
+                <h2>Login as Staff</h2>
+                <p>Access the staff portal and resources</p>
+            </a>
 
-/* Admin card in center */
-.admin-card{
-grid-column:span 2;
-max-width:600px;
-margin:auto;
-}
+            <a href="{{ route('admin.login') }}" class="login-type-card">
+                <span class="login-type-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                <h2>Login as Admin</h2>
+                <p>Manage hospital operations and settings</p>
+            </a>
+        </div>
 
-.btn{
-margin-top:35px;
-display:inline-block;
-background:#1e4f91;
-color:white;
-padding:14px 40px;
-border-radius:12px;
-text-decoration:none;
-font-weight:bold;
-transition:0.3s;
-}
-
-.btn:hover{
-background:#163d73;
-}
-
-@media (max-height:700px){
-body{
-align-items:flex-start;
-}
-}
-
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-<h2>Select Login Type</h2>
-
-<div class="grid">
-
-<a href="{{ route('patient.login') }}" class="card">
-<div class="icon-box">
-<i class="fa-regular fa-user"></i>
+        <div class="text-center mt-4">
+            <a href="{{ route('home') }}" class="btn btn-auth btn-sm btn-primary px-4">
+                <i class="fa-solid fa-globe me-1"></i> Visit Our Website
+            </a>
+        </div>
+    </div>
 </div>
-<h3>Login as Patient</h3>
-<p>Access your medical records and appointments</p>
-</a>
-
-<a href="{{ route('doctor.login') }}" class="card">
-<div class="icon-box">
-<i class="fa-solid fa-user-doctor"></i>
-</div>
-<h3>Login as Doctor</h3>
-<p>Manage patients and medical procedures</p>
-</a>
-
-<a href="{{ route('staff.login') }}" class="card">
-<div class="icon-box">
-<i class="fa-solid fa-user-tie"></i>
-</div>
-<h3>Login as Staff</h3>
-<p>Access staff portal and hospital resources</p>
-</a>
-
-<a href="{{ route('nurse.login') }}" class="card">
-<div class="icon-box">
-<i class="fa-solid fa-user-nurse"></i>
-</div>
-<h3>Login as Nurse</h3>
-<p>Access Nurse portal and hospital resources</p>
-</a>
-
-<!-- Admin -->
-<a href="{{ route('admin.login') }}" class="card admin-card">
-<div class="icon-box">
-<i class="fa-solid fa-shield-halved"></i>
-</div>
-<h3>Login as Admin</h3>
-<p>Manage hospital operations and settings</p>
-</a>
-
-</div>
-
-<a href="#" class="btn">
-<i class="fa-solid fa-globe"></i> Visit Our Website
-</a>
-
-</div>
-
-</body>
-</html>
+@endsection

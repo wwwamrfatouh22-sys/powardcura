@@ -39,24 +39,43 @@ return [
 
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'patients',
+        ],
+
+        'patient' => [
+            'driver' => 'session',
+            'provider' => 'patients',
         ],
 
         'doctor' => [
             'driver' => 'session',
             'provider' => 'doctors',
         ],
-        'nurse' => [
-            'driver' => 'session',
-            'provider' => 'nurses',
-        ],
         'staff' => [
             'driver' => 'session',
             'provider' => 'staff',
         ],
         'admin' => [
-        'driver' => 'session',
-        'provider' => 'admins',
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
+
+        'admin-api' => [
+            'driver' => 'token',
+            'provider' => 'admins',
+            'hash' => false,
+        ],
+
+        'doctor-api' => [
+            'driver' => 'token',
+            'provider' => 'doctors',
+            'hash' => false,
+        ],
+
+        'staff-api' => [
+            'driver' => 'token',
+            'provider' => 'staff',
+            'hash' => false,
         ],
     ],
 
@@ -81,6 +100,11 @@ return [
 
     'providers' => [
 
+        'patients' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Patient::class,
+        ],
+
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\Patient::class,
@@ -90,18 +114,14 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\Doctor::class,
         ],
-        'nurses' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\Nurse::class,
-        ],
         'staff' => [
             'driver' => 'eloquent',
             'model' => App\Models\Staff::class,
         ],
         'admins' => [
-        'driver' => 'eloquent',
-        'model' => App\Models\Admin::class,
-],
+            'driver' => 'eloquent',
+            'model' => App\Models\Admin::class,
+        ],
 
     ],
 
@@ -130,8 +150,32 @@ return [
     */
 
     'passwords' => [
+        'patients' => [
+            'provider' => 'patients',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
         'users' => [
-            'provider' => 'users',
+            'provider' => 'patients',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'doctors' => [
+            'provider' => 'doctors',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'staff' => [
+            'provider' => 'staff',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'admins' => [
+            'provider' => 'admins',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
             'throttle' => 60,

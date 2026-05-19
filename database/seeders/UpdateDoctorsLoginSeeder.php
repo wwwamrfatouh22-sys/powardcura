@@ -6,6 +6,7 @@ use App\Models\Doctor;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UpdateDoctorsLoginSeeder extends Seeder
 {
@@ -15,7 +16,7 @@ class UpdateDoctorsLoginSeeder extends Seeder
             ['name' => 'Dr. Sarah Johnson'],
             [
                 'email' => 'sarah@nuh.com',
-                'password' => Hash::make('12345678'),
+                'password' => Hash::make(env('SEED_DOCTOR_PASSWORD', Str::password(32))),
                 'updated_at' => now(),
             ]
         );
@@ -23,7 +24,7 @@ class UpdateDoctorsLoginSeeder extends Seeder
             ['name' => 'Dr. Michael Chen'],
             [
                 'email' => 'michael@nuh.com',
-                'password' => Hash::make('12345678'),
+                'password' => Hash::make(env('SEED_DOCTOR_PASSWORD', Str::password(32))),
                 'updated_at' => now(),
             ]
         );

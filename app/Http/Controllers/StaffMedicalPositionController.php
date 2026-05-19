@@ -2,42 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MedicalPosition;
-use Illuminate\Http\Request;
+use App\Models\JobApplication;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class StaffMedicalPositionController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        $positions = MedicalPosition::with('department')->get();
+        $applications = JobApplication::query()
+            ->with('job:id,title')
+            ->latest()
+            ->get();
 
-        return view('staff.medical_positions', compact('positions'));
+        return view('staff.job_applications', compact('applications'));
     }
-    public function approve($id)
-    {
-        $position = MedicalPosition::findOrFail($id);
 
-        $position->update([
-            'status' => 'approved'
+    public function approve(int $id): RedirectResponse
+    {
+        JobApplication::findOrFail($id)->update([
+            'status' => 'approved',
         ]);
 
         return back();
     }
 
-    public function reject($id)
+    public function reject(int $id): RedirectResponse
     {
-        $position = MedicalPosition::findOrFail($id);
-
-        $position->update([
-            'status' => 'rejected'
+        JobApplication::findOrFail($id)->update([
+            'status' => 'rejected',
         ]);
 
         return back();
     }
-    public function administrative()
-    {
-        $positions = MedicalPosition::with('department')->get();
 
-        return view('staff.administrative_positions', compact('positions'));
+    public function administrative(): RedirectResponse
+    {
+        return redirect()->route('staff.dashboard');
     }
 }

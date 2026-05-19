@@ -20,6 +20,7 @@ class JobSeeder extends Seeder
             'location' => 'NUH',
             'salary' => '-',
             'type' => 'medical',
+            'status' => 'active',
         ]);
 
         Job::create([
@@ -29,6 +30,7 @@ class JobSeeder extends Seeder
             'location' => 'NUH',
             'salary' => '-',
             'type' => 'medical',
+            'status' => 'active',
         ]);
 
         Job::create([
@@ -37,7 +39,8 @@ class JobSeeder extends Seeder
             'requirements' => 'Bachelor degree in HR, 2+ years experience',
             'location' => 'NUH',
             'salary' => '-',
-            'type' => 'admin',
+            'type' => 'administrative',
+            'status' => 'active',
         ]);
     }
 }

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Patient extends Authenticatable
 {
+    use SoftDeletes;
+
     protected $table = 'patients';
     protected $fillable = [
         'full_name',
@@ -38,6 +41,16 @@ class Patient extends Authenticatable
     {
         return $this->hasMany(RadiologyResult::class);
     }
+
+    public function labRequests()
+    {
+        return $this->hasMany(LabRequest::class);
+    }
+
+    public function radiologyRequests()
+    {
+        return $this->hasMany(RadiologyRequest::class);
+    }
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -53,4 +66,8 @@ class Patient extends Authenticatable
         return $this->hasMany(Appointment::class);
     }
 
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
 }

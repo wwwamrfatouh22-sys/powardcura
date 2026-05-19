@@ -1,285 +1,121 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Leave Request</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <style>
-
-        body{
-            margin:0;
-            font-family:Arial;
-            background:linear-gradient(135deg,#5dade2,#1e69de);
-            padding:40px;
-        }
-
-        .container{
-            max-width:1100px;
-            margin:auto;
-            background:#f3f4f6;
-            border-radius:25px;
-            padding:40px;
-            box-shadow:0 20px 40px rgba(0,0,0,0.25);
-        }
-
-        h2{margin-top:0;}
-
-        .grid{
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:40px;
-        }
-
-        .card{
-            background:white;
-            padding:25px;
-            border-radius:15px;
-            box-shadow:0 10px 25px rgba(0,0,0,0.1);
-            margin-bottom:20px;
-        }
-
-        label{
-            display:block;
-            margin-top:15px;
-            font-weight:bold;
-        }
-
-        input,select,textarea{
-            width:100%;
-            padding:10px;
-            margin-top:5px;
-            border-radius:10px;
-            border:1px solid #ccc;
-        }
-
-        textarea{height:100px;}
-
-        .btn{
-            margin-top:20px;
-            background:#123a6f;
-            color:white;
-            padding:12px 25px;
-            border-radius:12px;
-            border:none;
-            cursor:pointer;
-        }
-
-        .status{
-            padding:5px 10px;
-            border-radius:20px;
-            font-size:12px;
-            font-weight:bold;
-        }
-
-        .approved{background:#d4edda;color:#155724;}
-        .pending{background:#fff3cd;color:#856404;}
-        .rejected{background:#f8d7da;color:#721c24;}
-
-        .error{color:red;margin-top:10px;}
-        .success{color:green;margin-bottom:15px;}
-
-        @media(max-width:900px){
-            .grid{grid-template-columns:1fr;}
-        }
-
-    </style>
-</head>
-
-<body>
+@extends('staff.layout')
 
 @php
     use Carbon\Carbon;
+    $activeNav = 'leave';
+    $currentLeave = $leaveRequests->where('status', 'pending')->first();
 @endphp
 
-<div class="container">
+@section('title', 'Create Leave Request')
 
-    @if(session('success'))
-        <div class="success">{{ session('success') }}</div>
-    @endif
-
-    <h2>Leave Request Form</h2>
-    <p>Submit a new leave request or view current and past leave requests.</p>
-
-    <div class="grid">
-
-        <!-- LEFT SIDE -->
+@section('hero')
+    <section class="page-hero">
         <div>
-
-            @php
-                $currentLeave = $leaveRequests->where('status','pending')->first();
-            @endphp
-
-            @if($currentLeave)
-
-                <div class="card">
-
-                    <h4>Current Leave Request Status</h4>
-
-                    <p>
-                        {{ Carbon::parse($currentLeave->start_date)->format('M d, Y') }}
-                        -
-                        {{ Carbon::parse($currentLeave->end_date)->format('M d, Y') }}
-                    </p>
-
-                    <p>
-                        Duration:
-                        {{ Carbon::parse($currentLeave->start_date)
-                        ->diffInDays(Carbon::parse($currentLeave->end_date)) + 1 }}
-                        days
-                    </p>
-
-                    <span class="status {{ $currentLeave->status }}">
-{{ ucfirst($currentLeave->status) }}
-</span>
-
-                </div>
-
-            @endif
-
-
-            @if ($errors->any())
-
-                <div class="error">
-
-                    @foreach ($errors->all() as $error)
-                        <p>{{ $error }}</p>
-                    @endforeach
-
-                </div>
-
-            @endif
-
-
-            <form method="POST" action="{{ route('staff.leave.store') }}">
-
-                @csrf
-
-                <label>Request For</label>
-
-                <select id="typeSelect" name="type">
-
-                    <option value="">Select</option>
-                    <option value="doctor">Doctor</option>
-                    <option value="nurse">Nurse</option>
-
-                </select>
-
-
-                <label>Select Name</label>
-
-                <select id="staffSelect" name="staff_id">
-
-                    <option value="">Select staff</option>
-
-                    @foreach($doctors as $doctor)
-
-                        <option value="{{ $doctor->id }}" data-type="doctor" style="display:none;">
-                            {{ $doctor->name }}
-                        </option>
-
-                    @endforeach
-
-
-                    @foreach($nurses as $nurse)
-
-                        <option value="{{ $nurse->id }}" data-type="nurse" style="display:none;">
-                            {{ $nurse->name }}
-                        </option>
-
-                    @endforeach
-
-                </select>
-
-
-                <label>Start Date</label>
-
-                <input type="date" name="start_date" value="{{ old('start_date') }}">
-
-
-                <label>End Date</label>
-
-                <input type="date" name="end_date" value="{{ old('end_date') }}">
-
-
-                <label>Reason for Leave</label>
-
-                <textarea name="reason">{{ old('reason') }}</textarea>
-
-
-                <button class="btn">Submit Request</button>
-
-            </form>
-
+            <span class="eyebrow"><i class="bi bi-calendar-plus"></i> New Leave Request</span>
+            <h2>Submit leave requests in a cleaner, more readable staff form.</h2>
+            <p>This page keeps the existing leave submission flow intact while improving spacing, card structure, and responsiveness for staff on desktop and mobile.</p>
         </div>
 
+        <div class="page-actions">
+            <a href="{{ route('staff.leave.index') }}" class="btn-soft"><i class="bi bi-arrow-left"></i> Back to Requests</a>
+        </div>
+    </section>
+@endsection
 
-        <!-- RIGHT SIDE -->
+@section('content')
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card-surface">
+                <div class="card-body">
+                    <div class="section-title">
+                        <h3>Leave Request Form</h3>
+                        <span>Submit a new request</span>
+                    </div>
 
-        <div>
+                    <form method="POST" action="{{ route('staff.leave.store') }}" class="row g-3">
+                        @csrf
+                        <div class="col-md-6">
+                            <label class="form-label">Select Doctor</label>
+                            <select name="doctor_id" class="form-select">
+                                <option value="">Select doctor</option>
+                                @foreach($doctors as $doctor)
+                                    <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
+                                        {{ $doctor->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-            <h3>Leave Request History</h3>
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" name="start_date" class="form-control" value="{{ old('start_date') }}">
+                        </div>
 
-            @foreach($leaveRequests as $leave)
+                        <div class="col-md-6">
+                            <label class="form-label">End Date</label>
+                            <input type="date" name="end_date" class="form-control" value="{{ old('end_date') }}">
+                        </div>
 
-                <div class="card">
+                        <div class="col-12">
+                            <label class="form-label">Reason for Leave</label>
+                            <textarea name="reason" class="form-control" rows="5">{{ old('reason') }}</textarea>
+                        </div>
 
-                    <p>
-
-                        {{ Carbon::parse($leave->start_date)->format('M d, Y') }}
-
-                        -
-
-                        {{ Carbon::parse($leave->end_date)->format('M d, Y') }}
-
-                    </p>
-
-                    <p>
-                        Duration:
-                        {{ Carbon::parse($leave->start_date)
-                        ->diffInDays(Carbon::parse($leave->end_date)) + 1 }}
-                        days
-                    </p>
-
-                    <p>
-                        Reason: {{ $leave->reason }}
-                    </p>
-
-                    <span class="status {{ $leave->status }}">
-{{ ucfirst($leave->status) }}
-</span>
-
+                        <div class="col-12 pt-2">
+                            <button class="btn-brand" type="submit">Submit Request</button>
+                        </div>
+                    </form>
                 </div>
-
-            @endforeach
-
+            </div>
         </div>
 
+        <div class="col-lg-5">
+            <div class="info-stack">
+                @if($currentLeave)
+                    <div class="card-surface">
+                        <div class="card-body">
+                            <div class="section-title">
+                                <h4>Current Leave Request</h4>
+                                <span class="status-badge status-pending">Pending</span>
+                            </div>
+                            <div class="info-tile mb-3">
+                                <strong>Leave Window</strong>
+                                {{ Carbon::parse($currentLeave->start_date)->format('M d, Y') }} - {{ Carbon::parse($currentLeave->end_date)->format('M d, Y') }}
+                            </div>
+                            <div class="info-tile mb-3">
+                                <strong>Duration</strong>
+                                {{ Carbon::parse($currentLeave->start_date)->diffInDays(Carbon::parse($currentLeave->end_date)) + 1 }} days
+                            </div>
+                            <div class="info-tile">
+                                <strong>Reason</strong>
+                                {{ $currentLeave->reason }}
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="card-surface">
+                    <div class="card-body">
+                        <div class="section-title">
+                            <h4>Leave Request History</h4>
+                            <span>{{ $leaveRequests->count() }} records</span>
+                        </div>
+
+                        <div class="info-stack">
+                            @forelse($leaveRequests as $leave)
+                                <div class="info-tile">
+                                    <strong>{{ Carbon::parse($leave->start_date)->format('M d, Y') }} - {{ Carbon::parse($leave->end_date)->format('M d, Y') }}</strong>
+                                    <div class="mb-2">Duration: {{ Carbon::parse($leave->start_date)->diffInDays(Carbon::parse($leave->end_date)) + 1 }} days</div>
+                                    <div class="mb-2">Reason: {{ $leave->reason }}</div>
+                                    <span class="status-badge {{ $leave->status === 'approved' ? 'status-approved' : ($leave->status === 'rejected' ? 'status-rejected' : 'status-pending') }}">{{ ucfirst($leave->status) }}</span>
+                                </div>
+                            @empty
+                                <div class="info-tile">No leave history available yet.</div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-</div>
-
-
-<script>
-
-    const typeSelect = document.getElementById('typeSelect');
-    const staffSelect = document.getElementById('staffSelect');
-    const options = staffSelect.querySelectorAll('option[data-type]');
-
-    typeSelect.addEventListener('change', function(){
-
-        const type = this.value;
-
-        options.forEach(option => {
-
-            option.style.display = option.dataset.type === type ? 'block' : 'none';
-
-        });
-
-        staffSelect.value='';
-
-    });
-
-</script>
-
-</body>
-</html>
+@endsection

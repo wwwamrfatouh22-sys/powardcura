@@ -1,140 +1,133 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Medical Positions</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+@extends('layouts.public_site')
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+@php($publicSection = 'jobs')
 
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+@section('title', 'Job Opportunities')
 
+@section('head')
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
+        .listing-grid {
+            margin-top: 8px;
         }
 
-        .page-header {
-            background: #f3f4f6;
-            padding: 15px 0;
+        .listing-card {
+            height: 100%;
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: transform .25s ease, box-shadow .25s ease;
+        }
+
+        .listing-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .card-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .card-subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .type-badge,
+        .meta-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .type-badge {
+            padding: 8px 12px;
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            white-space: nowrap;
+        }
+
+        .card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .meta-pill {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid var(--border);
+            color: #45617e;
+        }
+
+        .empty-state {
+            border-radius: var(--radius-lg);
+            padding: 30px 26px;
+            color: var(--muted);
             text-align: center;
         }
-
-        .page-header h2 {
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .page-header p {
-            color: #6c757d;
-        }
-
-        .jobs-section {
-            background: linear-gradient(90deg,#005baa,#5fa8dd);
-            padding: 30px 0;
-        }
-
-        .job-card {
-            background: #f8f9fa;
-            border-radius: 18px;
-            padding: 35px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            margin-bottom: 40px;
-        }
-
-        .job-card h4 {
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-
-        .job-card p {
-            color: #333;
-        }
-
-        .apply-btn {
-            background-color: #0b3a78;
-            color: white;
-            padding: 12px 45px;
-            border-radius: 8px;
-            font-weight: 600;
-            border: none;
-        }
-
-        .apply-btn:hover {
-            background-color: #082c5c;
-        }
-
-        @media (max-width: 768px) {
-            .job-card {
-                text-align: center;
-            }
-        }
-        .page-header {
-            padding: 25px 0;
-        }
-        .page-header img {
-            margin: 0;
-        }
     </style>
-</head>
-<body>
+@endsection
 
-<!-- Page Header -->
-<div class="page-header">
-    <div class="page-header d-flex align-items-center justify-content-between px-4">
-
-        <!-- Logo -->
+@section('content')
+    <section class="page-hero surface-panel">
         <div>
-            <img src="{{ asset('images/logo_Image.png') }}"
-                 alt="NUH Logo"
-                 style="height:60px;">
+            <span class="eyebrow"><i class="bi bi-briefcase-fill"></i> NUH Careers</span>
+            <h1>Job Opportunities</h1>
+            <p>Explore open roles designed with the same clean experience as the rest of the hospital website, then move straight into the existing application flow without any backend changes.</p>
         </div>
 
-        <!-- Title -->
-        <div class="text-center w-100">
-            <h2>Medical Positions</h2>
-            <p>Discover your next career opportunity in NUH</p>
+        <div class="hero-actions">
+            <a href="{{ route('staff.module.training') }}" class="btn-ghost">View Training Programs</a>
+            <a href="{{ route('home') }}#departments-section" class="btn-main">Back To Main Site</a>
         </div>
+    </section>
 
-    </div>
-</div>
+    <div class="row g-4 listing-grid">
+        @forelse($medicalJobs->concat($administrativeJobs) as $job)
+            @php($isAdministrative = in_array($job->type, ['administrative', 'admin'], true))
+            <div class="col-md-6 col-xl-4">
+                <article class="listing-card surface-panel">
+                    <div class="card-top">
+                        <div>
+                            <h2 class="card-title">{{ $job->title }}</h2>
+                            <p class="card-subtitle">{{ \Illuminate\Support\Str::limit($job->description ?: 'Join the NUH team through a published opening.', 140) }}</p>
+                        </div>
+                        <span class="type-badge">{{ $isAdministrative ? 'Administrative' : 'Medical' }}</span>
+                    </div>
 
-<!-- Jobs Section -->
-<div class="jobs-section">
-    <div class="container">
+                    <div class="card-meta">
+                        @if($job->department)
+                            <span class="meta-pill">{{ $job->department }}</span>
+                        @endif
+                        @if($job->location)
+                            <span class="meta-pill">{{ $job->location }}</span>
+                        @endif
+                    </div>
 
-        @forelse($jobs as $job)
-            <div class="job-card d-md-flex justify-content-between align-items-center">
-                <div>
-                    <h4>{{ $job->title }}</h4>
-
-                    <p>{{ $job->description }}</p>
-
-                    <strong>Requirements:</strong>
-                    <p>{{ $job->requirements }}</p>
-
-                    <p><i class="bi bi-geo-alt"></i> {{ $job->location }}</p>
-                    <p><i class="bi bi-currency-dollar"></i> {{ $job->salary ?? '-' }}</p>
-                </div>
-
-                <a href="{{ route('jobs.apply', $job->id) }}" class="apply-btn">
-                    Apply Now
-                </a>
+                    <div class="mt-auto">
+                        <a href="{{ route('jobs.apply', $job) }}" class="btn-main">Apply</a>
+                    </div>
+                </article>
             </div>
         @empty
-            <div class="job-card text-center">
-                <h4>No medical positions available right now.</h4>
+            <div class="col-12">
+                <div class="empty-state surface-panel">No job opportunities are currently available.</div>
             </div>
         @endforelse
-
     </div>
-</div>
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-</body>
-</html>
+@endsection

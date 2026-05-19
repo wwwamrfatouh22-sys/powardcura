@@ -3,13 +3,30 @@
 namespace App\Http\Controllers;
 use Carbon\Carbon;
 use App\Models\Patient;
+use App\Support\DeletionGuard;
+use App\Support\TableFilters;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AdminPatientController extends Controller
 {
     public function index()
     {
-        $patients = Patient::latest()->get();
+        $patients = Patient::query()->withoutTrashed()->latest();
+        TableFilters::apply($patients, request(), [
+            'date_column' => 'created_at',
+            'status_column' => 'status',
+        ]);
+        $patients = $patients->paginate(10)->appends(request()->query());
+
+        if ($patients->isEmpty()) {
+            Log::debug('Admin patients index returned no rows.', [
+                'filters' => request()->query(),
+                'active_patients' => Patient::query()->withoutTrashed()->count(),
+                'trashed_patients' => Patient::onlyTrashed()->count(),
+            ]);
+        }
+
         return view('admin.patients', compact('patients'));
     }
     public function create()
@@ -20,12 +37,16 @@ class AdminPatientController extends Controller
 
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'gender' => ['nullable', 'in:male,female'],
+        ]);
+
         Patient::create([
             'full_name' => $request->name,
             'national_id' => $request->national_id,
             'dob' => $request->dob,
             'phone' => $request->phone,
-            'gender' => $request->gender,
+            'gender' => $validated['gender'] ?? null,
             'file_number' => $request->file_number,
             'medical_condition' => $request->medical_condition,
 
@@ -40,7 +61,7 @@ class AdminPatientController extends Controller
     public function destroy($id)
     {
         $patient = Patient::findOrFail($id);
-        $patient->delete();
+        DeletionGuard::deleteOne($patient, 'patient.deleted', ['source' => 'admin']);
 
         return redirect()->route('admin.patients')->with('success', 'Patient deleted successfully');
     }
@@ -51,13 +72,17 @@ class AdminPatientController extends Controller
     }
     public function update(Request $request, $id)
     {
+        $validated = $request->validate([
+            'gender' => ['nullable', 'in:male,female'],
+        ]);
+
         $patient = Patient::findOrFail($id);
 
         $patient->update([
             'full_name' => $request->name,
             'dob' => $request->dob,
             'phone' => $request->phone,
-            'gender' => $request->gender,
+            'gender' => $validated['gender'] ?? null,
             'medical_condition' => $request->medical_condition,
             'last_visit' => $request->last_visit,
         ]);

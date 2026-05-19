@@ -3,18 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
-use Illuminate\Http\Request;
+use App\Support\NormalizesDepartments;
 
 class DepartmentController extends Controller
 {
-    public function index()
+    public function showDoctors(Department $department)
     {
-        $departments = Department::all();
-        return view('departments', compact('departments'));
-    }
+        NormalizesDepartments::sync();
 
-    public function show(Department $department)
-    {
+        $department->load(['doctors' => fn ($query) => $query->orderBy('name')]);
         $doctors = $department->doctors;
         return view('doctors.index', compact('department', 'doctors'));
     }

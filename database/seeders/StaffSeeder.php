@@ -6,6 +6,7 @@ use App\Models\Staff;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class StaffSeeder extends Seeder
 {
@@ -16,8 +17,11 @@ class StaffSeeder extends Seeder
     {
         Staff::create([
             'name' => 'Staff Admin',
+            'full_name' => 'Staff Admin',
             'email' => 'staff@nuh.com',
-            'password' => Hash::make('12345678'),
+            'role' => 'admin_assistant',
+            'status' => 'active',
+            'password' => Hash::make(env('SEED_STAFF_PASSWORD', Str::password(32))),
         ]);
     }
 }

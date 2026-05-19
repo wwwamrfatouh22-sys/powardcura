@@ -1,369 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Training Programs Management</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+@extends('staff.layout')
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+@php($activeNav = 'training')
 
-    <style>
+@section('title', 'Training Registrations')
 
-        body{
-            margin:0;
-            font-family:'Segoe UI',sans-serif;
-            background:linear-gradient(135deg,#cfe6ff,#2a82c9);
-            min-height:100vh;
-        }
-
-        /* Sidebar */
-
-        .sidebar{
-            width:250px;
-            height:100vh;
-            position:fixed;
-            left:-250px;
-            top:0;
-            background:#ffffff;
-            padding:30px 20px;
-            box-shadow:4px 0 25px rgba(0,0,0,0.08);
-            transition:0.3s;
-            z-index:1001;
-            display:flex;
-            flex-direction:column;
-        }
-
-        .sidebar.active{
-            left:0;
-        }
-
-        .logo-container{
-            text-align:center;
-            margin-bottom:40px;
-        }
-
-        .logo-container img{
-            width:120px;
-        }
-
-        .menu-links{
-            display:flex;
-            flex-direction:column;
-            gap:10px;
-        }
-
-        .menu-links a{
-            padding:14px 18px;
-            border-radius:14px;
-            text-decoration:none;
-            color:#444;
-            font-weight:500;
-            font-size:16px;
-            transition:0.3s;
-        }
-
-        .menu-links a:hover{
-            background:#eef6ff;
-            transform:translateX(5px);
-        }
-
-        .active-link{
-            background:#dbeaff;
-            color:#154484!important;
-            font-weight:600;
-        }
-
-        /* Overlay */
-
-        .overlay{
-            position:fixed;
-            width:100%;
-            height:100%;
-            background:rgba(0,0,0,0.3);
-            top:0;
-            left:0;
-            display:none;
-            z-index:1000;
-        }
-
-        .overlay.active{
-            display:block;
-        }
-
-        /* Header */
-
-        .header-section{
-            background:linear-gradient(135deg,#eaf4ff,#6fa4cf);
-            padding:30px 40px;
-            border-bottom-left-radius:25px;
-            border-bottom-right-radius:25px;
-        }
-
-        .header-top{
-            display:flex;
-            align-items:center;
-            gap:15px;
-        }
-
-        .menu-icon{
-            font-size:30px;
-            cursor:pointer;
-        }
-
-        .logo-title{
-            margin:0;
-            font-weight:700;
-            font-size:22px;
-        }
-
-        .sub-title{
-            font-size:14px;
-            color:#444;
-        }
-
-        .page-title{
-            margin-top:40px;
-        }
-
-        .page-title h2{
-            font-size:28px;
-            font-weight:700;
-        }
-
-        .page-title p{
-            font-size:16px;
-            color:#444;
-        }
-
-        /* Main */
-
-        .main{
-            padding:40px;
-        }
-
-        /* Table */
-
-        .card-box{
-            background:white;
-            border-radius:20px;
-            overflow:hidden;
-            box-shadow:0 25px 60px rgba(0,0,0,0.15);
-            margin-top:30px;
-        }
-
-        .table thead{
-            background:#154484;
-            color:white;
-            font-size:17px;
-        }
-
-        .table th{
-            padding:18px;
-            font-weight:600;
-        }
-
-        .table td{
-            padding:18px;
-            font-size:16px;
-            vertical-align:middle;
-        }
-
-        /* Buttons */
-
-        .btn-cv{
-            background:#154484;
-            color:white;
-            border-radius:25px;
-            padding:6px 18px;
-            border:none;
-            font-size:14px;
-        }
-
-        .btn-approve{
-            background:#2ecc71;
-            color:white;
-            border-radius:25px;
-            border:none;
-            padding:6px 18px;
-            font-size:14px;
-        }
-
-        .btn-reject{
-            background:#e74c3c;
-            color:white;
-            border-radius:25px;
-            border:none;
-            padding:6px 18px;
-            font-size:14px;
-        }
-
-        .badge-approved{
-            background:#2ecc71;
-            padding:6px 16px;
-            border-radius:20px;
-            color:white;
-        }
-
-    </style>
-</head>
-
-<body>
-
-<div class="overlay" onclick="toggleSidebar()"></div>
-
-<!-- Sidebar -->
-
-<div class="sidebar" id="sidebar">
-
-    <div class="logo-container">
-        <img src="{{ asset('images/logo_Image.png') }}">
-    </div>
-
-    <div class="menu-links">
-
-        <a href="{{ route('staff.leave.index') }}">
-            Leave Requests
-        </a>
-
-        <a href="{{ route('staff.medical.positions') }}">
-            Medical Positions
-        </a>
-
-        <a href="{{ route('staff.administrative.positions') }}">
-            Administrative Positions
-        </a>
-
-        <a href="{{ route('staff.training.programs') }}" class="active-link">
-            Training Programs
-        </a>
-
-        <a href="{{ route('staff.complaints') }}">
-            Complaints
-        </a>
-
-    </div>
-
-</div>
-
-<!-- Header -->
-
-<div class="header-section">
-
-    <div class="header-top">
-
-        <div class="menu-icon" onclick="toggleSidebar()">☰</div>
-
+@section('hero')
+    <section class="page-hero">
         <div>
-            <h3 class="logo-title">NUH</h3>
-            <span class="sub-title">Administrative Dashboard</span>
+            <span class="eyebrow"><i class="bi bi-mortarboard"></i> Training Programs</span>
+            <h2>Review training registrations in the same polished staff interface.</h2>
+            <p>Keep program submissions easy to scan, approve, reject, and review with the same table spacing, button language, and responsive behavior used across the staff area.</p>
+        </div>
+    </section>
+@endsection
+
+@section('content')
+    <div class="card-surface table-shell">
+        <div class="card-body">
+            <div class="section-title">
+                <h3>Training Registrations</h3>
+                <span>{{ method_exists($registrations, 'total') ? $registrations->total() : $registrations->count() }} total</span>
+            </div>
         </div>
 
-    </div>
+        <x-table-filters
+            :action="route('staff.training.programs')"
+            :type-options="[]"
+            :status-options="['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected']"
+            :show-type="false" />
 
-    <div class="page-title">
-
-        <h2>Training Programs Management</h2>
-        <p>Manage and track all Training Programs</p>
-
-    </div>
-
-</div>
-
-<!-- Main -->
-
-<div class="main">
-
-    <div class="card-box">
-
-        <table class="table mb-0">
-
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Age</th>
-                <th>Gender</th>
-                <th>Phone</th>
-                <th>University</th>
-                <th>Department</th>
-                <th>CV</th>
-                <th>GPA</th>
-                <th>Actions</th>
-            </tr>
-            </thead>
-
-            <tbody>
-
-            @foreach($programs as $program)
-
+        <div class="table-responsive">
+            <table class="table table-modern align-middle mb-0">
+                <thead>
                 <tr>
-
-                    <td>{{ $program->id }}</td>
-
-                    <td>{{ $program->name }}</td>
-
-                    <td>{{ $program->age }}</td>
-
-                    <td>{{ ucfirst($program->gender) }}</td>
-
-                    <td>{{ $program->phone }}</td>
-
-                    <td>{{ $program->university }}</td>
-
-                    <td>{{ $program->department->name_en ?? '-' }}</td>
-
-                    <td>
-                        <a href="{{ asset('storage/'.$program->cv) }}" class="btn-cv">
-                            View CV
-                        </a>
-                    </td>
-
-                    <td>{{ $program->gpa }}</td>
-
-                    <td class="d-flex gap-2">
-
-                        @if($program->status == 'pending')
-
-                            <form method="POST" action="{{ route('staff.training.approve',$program->id) }}">
-                                @csrf
-                                <button class="btn-approve">Approve</button>
-                            </form>
-
-                            <form method="POST" action="{{ route('staff.training.reject',$program->id) }}">
-                                @csrf
-                                <button class="btn-reject">Reject</button>
-                            </form>
-
-                        @elseif($program->status == 'approved')
-
-                            <span class="badge-approved">Approved</span>
-
-                        @endif
-
-                    </td>
-
+                    <th>Full Name</th>
+                    <th>Program</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>National ID</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Department</th>
+                    <th>University</th>
+                    <th>GPA</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>CV</th>
+                    <th>Actions</th>
                 </tr>
-
-            @endforeach
-
-            </tbody>
-
-        </table>
-
+                </thead>
+                <tbody>
+                @forelse($registrations as $registration)
+                    <tr>
+                        <td class="fw-semibold">{{ $registration->full_name }}</td>
+                        <td>{{ $registration->training->title ?? '-' }}</td>
+                        <td>{{ $registration->email }}</td>
+                        <td>{{ $registration->phone }}</td>
+                        <td>{{ $registration->national_id }}</td>
+                        <td>{{ $registration->age ?? '-' }}</td>
+                        <td>{{ $registration->gender ? ucfirst($registration->gender) : '-' }}</td>
+                        <td>{{ $registration->department->name_en ?? '-' }}</td>
+                        <td>{{ $registration->university ?? '-' }}</td>
+                        <td>{{ $registration->gpa ?? '-' }}</td>
+                        <td>
+                            @if($registration->status === 'approved')
+                                <span class="status-badge status-approved">Approved</span>
+                            @elseif($registration->status === 'rejected')
+                                <span class="status-badge status-rejected">Rejected</span>
+                            @else
+                                <span class="status-badge status-pending">Pending</span>
+                            @endif
+                        </td>
+                        <td>{{ $registration->created_at?->format('Y-m-d H:i') }}</td>
+                        <td>
+                            @if($registration->cv_exists)
+                                <div class="action-cluster">
+                                    <a href="{{ route('staff.training.cv.view', $registration->id) }}" target="_blank" class="btn-soft">View CV</a>
+                                    <a href="{{ route('staff.training.cv.download', $registration->id) }}" class="btn-soft">Download CV</a>
+                                </div>
+                            @else
+                                <span class="table-note text-danger">CV Not Available</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($registration->status === 'pending')
+                                <div class="action-cluster">
+                                    <form method="POST" action="{{ route('staff.training.approve', $registration->id) }}">
+                                        @csrf
+                                        <button class="btn-success-soft" type="submit">Approve</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('staff.training.reject', $registration->id) }}">
+                                        @csrf
+                                        <button class="btn-danger-soft" type="submit">Reject</button>
+                                    </form>
+                                </div>
+                            @else
+                                <span class="table-note">Processed</span>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="14" class="empty-state">No training registrations received yet.</td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="table-filter-pagination p-4 pt-3">
+            {{ $registrations->links() }}
+        </div>
     </div>
-
-</div>
-
-<script>
-
-    function toggleSidebar(){
-
-        document.getElementById("sidebar").classList.toggle("active");
-        document.querySelector(".overlay").classList.toggle("active");
-
-    }
-
-</script>
-
-</body>
-</html>
+@endsection

@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Support\AuditLogger;
 
 class AdminAuthController extends Controller
 {
@@ -13,7 +14,6 @@ public function showLogin()
 
     public function login(Request $request)
     {
-
         $request->validate([
             'email'=>'required|email',
             'password'=>'required'
@@ -24,6 +24,7 @@ public function showLogin()
         if(Auth::guard('admin')->attempt($credentials))
         {
             $request->session()->regenerate();
+            AuditLogger::log('login.success', null, ['role' => 'admin']);
 
             return redirect()->route('admin.dashboard');
         }
@@ -34,6 +35,7 @@ public function showLogin()
     public function logout()
     {
 
+        AuditLogger::log('logout', null, ['role' => 'admin']);
         Auth::guard('admin')->logout();
 
         return redirect()->route('admin.login');

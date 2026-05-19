@@ -20,4 +20,9 @@ class Room extends Model
     {
         return $this->belongsTo(Patient::class);
     }
+
+    public function doctorSchedules()
+    {
+        return $this->hasMany(DoctorSchedule::class);
+    }
 }

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('patients', function (Blueprint $table) {
             $table->string('file_number')->nullable();
             $table->string('blood_type')->nullable();
-            $table->string('gender')->nullable();
+            $table->enum('gender', ['male', 'female'])->nullable();
             $table->integer('age')->nullable();
             $table->string('address')->nullable();
             $table->string('blood_pressure')->nullable();
