@@ -14,21 +14,22 @@ class AppointmentSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->deduplicateAppointmentSlots();
+        if (! Schema::hasTable('appointments') || ! Schema::hasTable('patients') || ! Schema::hasTable('doctors')) {
+            return;
+        }
 
-        $patients = Patient::query()->orderBy('id')->get();
+        $patients = Patient::query()->with('user')->orderBy('id')->get()->values();
         $doctors = Doctor::query()
-            ->with('department')
             ->whereNotNull('department_id')
             ->orderBy('department_id')
             ->orderBy('id')
-            ->get();
+            ->get()
+            ->values();
 
         if ($patients->isEmpty() || $doctors->isEmpty()) {
             return;
         }
 
-        $timeSlots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '17:00', '17:30', '18:00', '18:30'];
         $reasons = [
             'Initial consultation',
             'Follow-up visit',
@@ -36,99 +37,86 @@ class AppointmentSeeder extends Seeder
             'Routine checkup',
             'Lab result discussion',
             'Post-treatment review',
-            'Specialist referral',
             'Chronic condition monitoring',
         ];
-        $statuses = ['Confirmed', 'Completed', 'Canceled', 'Confirmed'];
-
-        $created = 0;
+        $statuses = ['Completed', 'Completed', 'Confirmed', 'Confirmed', 'Pending', 'Canceled', 'Confirmed'];
+        $times = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '17:00'];
 
         foreach ($doctors as $doctorIndex => $doctor) {
-            foreach (range(0, 1) as $visitIndex) {
-                $patient = $patients[($doctorIndex * 2 + $visitIndex) % $patients->count()];
+            foreach (range(0, 6) as $visitIndex) {
+                $sequence = ($doctorIndex * 7) + $visitIndex + 1;
+                $marker = sprintf('DEMO-APPT-%04d', $sequence);
+                $patient = $patients[($doctorIndex * 3 + $visitIndex) % $patients->count()];
                 $status = $statuses[($doctorIndex + $visitIndex) % count($statuses)];
                 $date = $this->appointmentDate($doctorIndex, $visitIndex, $status);
-                $time = $timeSlots[($doctorIndex + ($visitIndex * 3)) % count($timeSlots)];
-                $nameParts = $this->patientNameParts((string) $patient->full_name);
+                $time = $times[$visitIndex];
+                [$date, $time] = $this->availableSlot($doctor->id, $date, $time, $marker);
+                [$firstName, $lastName] = $this->patientNameParts((string) $patient->full_name);
 
-                $appointment = Appointment::updateOrCreate(
-                    [
-                        'doctor_id' => $doctor->id,
-                        'date' => $date,
-                        'time' => $time,
-                        'type' => 'hospital',
-                    ],
-                    [
-                        'patient_id' => $patient->id,
-                        'department_id' => $doctor->department_id,
-                        'first_name' => $nameParts[0],
-                        'last_name' => $nameParts[1],
-                        'email' => $patient->user?->email,
-                        'phone' => $patient->phone,
-                        'reason' => $reasons[($doctorIndex + $visitIndex) % count($reasons)],
-                        'status' => $status,
-                        'payment_method' => 'pay_at_hospital',
-                        'payment_amount' => 350,
-                        'payment_status' => $status === 'Completed' ? 'paid' : 'pending',
-                    ]
-                );
+                $appointment = Appointment::query()
+                    ->where('type', 'hospital')
+                    ->where('reason', 'like', $marker.'%')
+                    ->firstOrNew();
 
-                $this->upsertPayment($appointment);
-                $created++;
+                $appointment->fill([
+                    'doctor_id' => $doctor->id,
+                    'patient_id' => $patient->id,
+                    'department_id' => $doctor->department_id,
+                    'date' => $date,
+                    'time' => $time,
+                    'type' => 'hospital',
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'email' => $patient->user?->email,
+                    'phone' => $patient->phone,
+                    'reason' => $marker.' | '.$reasons[($doctorIndex + $visitIndex) % count($reasons)],
+                    'status' => $status,
+                    'payment_method' => 'pay_at_hospital',
+                    'payment_amount' => 350,
+                    'payment_status' => $status === 'Completed' ? 'paid' : 'pending',
+                    'cancellation_reason' => $status === 'Canceled' ? 'Demo schedule conflict' : null,
+                    'canceled_at' => $status === 'Canceled' ? Carbon::parse($date)->subDay() : null,
+                ]);
+                $appointment->save();
+
+                $this->upsertPayment($appointment, $marker);
             }
         }
-
-        $this->createQueueDepth($patients, $doctors, $timeSlots, $reasons, $created);
-        $this->deduplicateAppointmentSlots();
     }
 
     private function appointmentDate(int $doctorIndex, int $visitIndex, string $status): string
     {
         if ($status === 'Completed') {
-            return now()->subDays(1 + ($doctorIndex % 5))->toDateString();
+            return now()->subDays(1 + (($doctorIndex + $visitIndex) % 14))->toDateString();
         }
 
-        if ($status === 'Canceled') {
-            return now()->addDays(2 + ($doctorIndex % 6))->toDateString();
-        }
-
-        return now()->addDays(($doctorIndex + $visitIndex) % 7)->toDateString();
+        return now()->addDays(($doctorIndex + $visitIndex) % 14)->toDateString();
     }
 
-    private function createQueueDepth($patients, $doctors, array $timeSlots, array $reasons, int $offset): void
+    /**
+     * @return array{0:string,1:string}
+     */
+    private function availableSlot(int $doctorId, string $date, string $time, string $marker): array
     {
-        $today = now()->toDateString();
-        $queueDoctors = $doctors->take(min(8, $doctors->count()))->values();
+        $candidate = Carbon::parse($date.' '.$time);
 
-        foreach ($queueDoctors as $index => $doctor) {
-            $patient = $patients[($offset + $index) % $patients->count()];
-            $time = $timeSlots[$index % count($timeSlots)];
-            $nameParts = $this->patientNameParts((string) $patient->full_name);
+        for ($attempt = 0; $attempt < 60; $attempt++) {
+            $occupied = Appointment::query()
+                ->where('doctor_id', $doctorId)
+                ->whereDate('date', $candidate->toDateString())
+                ->where('time', $candidate->format('H:i'))
+                ->where('type', 'hospital')
+                ->where('reason', 'not like', $marker.'%')
+                ->exists();
 
-            $appointment = Appointment::updateOrCreate(
-                [
-                    'doctor_id' => $doctor->id,
-                    'date' => $today,
-                    'time' => $time,
-                    'type' => 'hospital',
-                ],
-                [
-                    'patient_id' => $patient->id,
-                    'department_id' => $doctor->department_id,
-                    'first_name' => $nameParts[0],
-                    'last_name' => $nameParts[1],
-                    'email' => $patient->user?->email,
-                    'phone' => $patient->phone,
-                    'reason' => $reasons[$index % count($reasons)],
-                    'status' => 'Confirmed',
-                    'payment_method' => 'pay_at_hospital',
-                    'payment_amount' => 350,
-                    'payment_status' => 'pending',
-                ]
-            );
+            if (! $occupied) {
+                return [$candidate->toDateString(), $candidate->format('H:i')];
+            }
 
-            $this->upsertPayment($appointment);
+            $candidate->addDay();
         }
+
+        return [$candidate->toDateString(), $candidate->format('H:i')];
     }
 
     /**
@@ -136,15 +124,13 @@ class AppointmentSeeder extends Seeder
      */
     private function patientNameParts(string $fullName): array
     {
-        $englishName = trim(explode('/', $fullName)[0]);
-        $parts = preg_split('/\s+/', $englishName) ?: [];
+        $parts = preg_split('/\s+/', trim(explode('/', $fullName)[0])) ?: [];
         $first = array_shift($parts) ?: 'Patient';
-        $last = implode(' ', $parts) ?: 'Guest';
 
-        return [$first, $last];
+        return [$first, implode(' ', $parts) ?: 'Guest'];
     }
 
-    private function upsertPayment(Appointment $appointment): void
+    private function upsertPayment(Appointment $appointment, string $marker): void
     {
         if (! Schema::hasTable('payments')) {
             return;
@@ -153,50 +139,14 @@ class AppointmentSeeder extends Seeder
         $paid = $appointment->status === 'Completed';
 
         Payment::updateOrCreate(
-            ['reference_number' => 'SEED-HOSPITAL-' . $appointment->id],
+            ['reference_number' => $marker],
             [
                 'appointment_id' => $appointment->id,
-                'payment_method' => $appointment->payment_method ?: 'pay_at_hospital',
-                'amount' => $appointment->payment_amount ?: 350,
+                'payment_method' => 'pay_at_hospital',
+                'amount' => 350,
                 'status' => $paid ? 'paid' : 'pending',
                 'paid_at' => $paid ? Carbon::parse($appointment->date)->setTime(12, 0) : null,
             ]
         );
-    }
-
-    private function deduplicateAppointmentSlots(): void
-    {
-        Appointment::query()
-            ->whereNotNull('doctor_id')
-            ->whereNotNull('date')
-            ->whereNotNull('time')
-            ->get()
-            ->groupBy(fn (Appointment $appointment) => implode('|', [
-                $appointment->doctor_id,
-                $appointment->date,
-                substr((string) $appointment->time, 0, 5),
-                $appointment->type ?: 'hospital',
-            ]))
-            ->filter(fn ($appointments) => $appointments->count() > 1)
-            ->each(function ($appointments): void {
-                $ordered = $appointments
-                    ->sortBy([
-                        fn (Appointment $appointment) => match ($appointment->status) {
-                            'Confirmed' => 0,
-                            'Pending' => 1,
-                            'Completed' => 2,
-                            'Canceled', 'Cancelled' => 3,
-                            default => 4,
-                        },
-                        fn (Appointment $appointment) => $appointment->id,
-                    ])
-                    ->values();
-
-                $duplicateIds = $ordered->slice(1)->pluck('id');
-
-                if ($duplicateIds->isNotEmpty()) {
-                    Appointment::query()->whereKey($duplicateIds)->delete();
-                }
-            });
     }
 }

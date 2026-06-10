@@ -6,76 +6,83 @@ use App\Models\Department;
 use App\Models\Doctor;
 use App\Models\DoctorAvailability;
 use App\Models\DoctorSchedule;
+use App\Models\Room;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class DoctorSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! Schema::hasTable('doctors') || ! Schema::hasTable('departments')) {
+            return;
+        }
+
         $departmentDoctors = $this->departmentDoctors();
         $fallbackDoctors = $this->fallbackDoctors();
         $fallbackIndex = 0;
+        $rooms = Schema::hasTable('rooms')
+            ? Room::query()->orderBy('room_number')->get()->values()
+            : collect();
 
         Department::query()
             ->orderBy('name_en')
             ->get()
-            ->each(function (Department $department) use ($departmentDoctors, $fallbackDoctors, &$fallbackIndex): void {
-                $existingCount = $department->doctors()->count();
-                if ($existingCount >= 2) {
-                    $department->doctors()->each(function (Doctor $doctor) use ($department): void {
-                        $this->ensureDoctorLogin($doctor, $department);
-                        $this->ensureSchedule($doctor);
-                    });
-                    $this->ensureDepartmentHead($department);
-                    return;
-                }
-
+            ->each(function (Department $department, int $departmentIndex) use ($departmentDoctors, $fallbackDoctors, $rooms, &$fallbackIndex): void {
                 $templates = $departmentDoctors[$department->name_en] ?? [];
 
-                while ($existingCount < 2) {
-                    $template = $templates[$existingCount] ?? $fallbackDoctors[$fallbackIndex % count($fallbackDoctors)];
+                foreach (range(0, 1) as $doctorIndex) {
+                    $template = $templates[$doctorIndex] ?? $fallbackDoctors[$fallbackIndex % count($fallbackDoctors)];
                     $fallbackIndex++;
 
-                    $doctor = $this->upsertDoctor($department, $template, $existingCount);
-                    $this->ensureSchedule($doctor);
-                    $existingCount++;
+                    $doctor = $this->upsertDoctor($department, $template, $doctorIndex);
+                    $room = $rooms->isNotEmpty()
+                        ? $rooms[($departmentIndex + $doctorIndex) % $rooms->count()]
+                        : null;
+                    $this->ensureSchedule($doctor, $room?->id);
                 }
 
-                $department->doctors()->each(function (Doctor $doctor) use ($department): void {
-                    $this->ensureDoctorLogin($doctor, $department);
-                    $this->ensureSchedule($doctor);
-                });
                 $this->ensureDepartmentHead($department);
             });
     }
 
     /**
-     * @param array{name:string,specialization:string,experience:int,rating:float,image?:string} $template
+     * @param  array{name:string,specialization:string,experience:int,rating:float,image?:string}  $template
      */
     private function upsertDoctor(Department $department, array $template, int $index): Doctor
     {
         $email = $this->emailFor($department, $template['name']);
 
-        return Doctor::updateOrCreate(
-            ['email' => $email],
-            [
-                'department_id' => $department->id,
-                'name' => $template['name'],
-                'password' => Hash::make(env('SEED_DOCTOR_PASSWORD', 'Doctor@12345')),
-                'specialization' => $template['specialization'],
-                'image' => $template['image'] ?? ($index % 2 === 0 ? 'doc1.jpg' : 'logo_Image.png'),
-                'experience' => $template['experience'],
-                'rating' => $template['rating'],
-                'status' => 'Available',
-                'has_private_clinic' => false,
-            ]
-        );
+        $doctor = Doctor::withTrashed()->firstOrNew(['email' => $email]);
+        $doctor->fill([
+            'department_id' => $department->id,
+            'name' => $template['name'],
+            'specialization' => $template['specialization'],
+            'image' => $template['image'] ?? ($index % 2 === 0 ? 'doc1.jpg' : 'logo_Image.png'),
+            'experience' => $template['experience'],
+            'rating' => $template['rating'],
+            'status' => 'Available',
+            'has_private_clinic' => false,
+        ]);
+        $doctor->deleted_at = null;
+
+        if (! $doctor->password) {
+            $doctor->password = Hash::make(env('SEED_DOCTOR_PASSWORD', 'Doctor@12345'));
+        }
+
+        $doctor->save();
+
+        return $doctor;
     }
 
-    private function ensureSchedule(Doctor $doctor): void
+    private function ensureSchedule(Doctor $doctor, ?int $roomId): void
     {
+        if (! Schema::hasTable('doctor_availabilities') || ! Schema::hasTable('doctor_schedules')) {
+            return;
+        }
+
         $availability = DoctorAvailability::updateOrCreate(
             [
                 'doctor_id' => $doctor->id,
@@ -102,35 +109,12 @@ class DoctorSeeder extends Seeder
                         'location_type' => 'hospital',
                     ],
                     [
-                        'room_id' => null,
+                        'room_id' => $roomId,
                         'is_active' => true,
                     ]
                 );
             }
         }
-    }
-
-    private function ensureDoctorLogin(Doctor $doctor, Department $department): void
-    {
-        $updates = [
-            'department_id' => $department->id,
-            'status' => in_array($doctor->status, ['Available', 'Busy'], true) ? $doctor->status : 'Available',
-            'specialization' => $doctor->specialization ?: ($department->name_en . ' Specialist'),
-            'image' => $doctor->image ?: 'logo_Image.png',
-            'experience' => $doctor->experience ?: 8,
-            'rating' => $doctor->rating ?: 4.6,
-        ];
-
-        if (! $doctor->email) {
-            $updates['email'] = 'doctor.' . $doctor->id . '@nuh.example';
-        }
-
-        if (! $doctor->password) {
-            $updates['password'] = Hash::make(env('SEED_DOCTOR_PASSWORD', 'Doctor@12345'));
-        }
-
-        $doctor->forceFill($updates)->save();
-        $doctor->refresh();
     }
 
     private function ensureDepartmentHead(Department $department): void

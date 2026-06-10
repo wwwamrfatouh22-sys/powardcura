@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,26 +15,26 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $seeders = [
+            'departments' => DepartmentSeeder::class,
+            'rooms' => RoomSeeder::class,
+            'doctors' => DoctorSeeder::class,
+            'staff' => StaffSeeder::class,
+            'users' => PatientSeeder::class,
+            'appointments' => AppointmentSeeder::class,
+            'lab_tests' => MedicalResultsSeeder::class,
+            'reports' => ReportSeeder::class,
+            'jobs_training' => JobSeeder::class,
+            'training_programs' => TrainingProgramSeeder::class,
+            'medical_positions' => MedicalPositionSeeder::class,
+            'staff_complaints' => ComplaintSeeder::class,
+            'admins' => AdminSeeder::class,
+        ];
 
-//        User::factory()->create([
-//            'name' => 'Test User',
-//            'email' => 'test@example.com',
-//        ]);
-        $this->call([
-            DepartmentSeeder::class,
-            DoctorSeeder::class,
-            MedicalResultsSeeder::class,
-            PatientSeeder::class,
-            JobSeeder::class,
-            AppointmentSeeder::class,
-            ReportSeeder::class,
-            FixAppointmentsSeeder::class,
-            MedicalPositionSeeder::class,
-            TrainingProgramSeeder::class,
-            ComplaintSeeder::class,
-            AdminSeeder::class,
-
-        ]);
+        foreach ($seeders as $table => $seeder) {
+            if (Schema::hasTable($table)) {
+                $this->call($seeder);
+            }
+        }
     }
 }

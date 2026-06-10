@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Job;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class JobSeeder extends Seeder
 {
@@ -13,34 +13,22 @@ class JobSeeder extends Seeder
      */
     public function run(): void
     {
-        Job::create([
-            'title' => 'Cardiologist',
-            'description' => 'Join our cardiovascular team to provide exceptional cardiac care.',
-            'requirements' => 'MD degree, Board certification in Cardiology, 3+ years experience',
-            'location' => 'NUH',
-            'salary' => '-',
-            'type' => 'medical',
-            'status' => 'active',
-        ]);
+        if (! Schema::hasTable('jobs_training')) {
+            return;
+        }
 
-        Job::create([
-            'title' => 'Emergency Medicine Physician',
-            'description' => 'Provide critical care in our Level 1 trauma center.',
-            'requirements' => 'MD/DO degree, Board certified in Emergency Medicine, ACLS & PALS',
-            'location' => 'NUH',
-            'salary' => '-',
-            'type' => 'medical',
-            'status' => 'active',
-        ]);
+        $jobs = [
+            ['title' => 'Cardiologist', 'description' => 'Provide outpatient and inpatient cardiovascular care.', 'requirements' => 'Medical degree, cardiology board certification, and 3+ years experience.', 'department' => 'Cardiology & Catheterization', 'type' => 'medical'],
+            ['title' => 'Emergency Medicine Physician', 'description' => 'Deliver urgent care in the emergency department.', 'requirements' => 'Medical degree, emergency medicine certification, ACLS and PALS.', 'department' => 'Emergency Physicians', 'type' => 'medical'],
+            ['title' => 'Radiology Technologist', 'description' => 'Support diagnostic imaging and patient preparation.', 'requirements' => 'Radiology qualification and 2+ years experience.', 'department' => 'Radiology', 'type' => 'medical'],
+            ['title' => 'HR Specialist', 'description' => 'Manage recruitment and employee relations.', 'requirements' => 'Bachelor degree in HR and 2+ years experience.', 'department' => 'Administration', 'type' => 'administrative'],
+        ];
 
-        Job::create([
-            'title' => 'HR Specialist',
-            'description' => 'Manage recruitment and employee relations.',
-            'requirements' => 'Bachelor degree in HR, 2+ years experience',
-            'location' => 'NUH',
-            'salary' => '-',
-            'type' => 'administrative',
-            'status' => 'active',
-        ]);
+        foreach ($jobs as $job) {
+            Job::updateOrCreate(
+                ['title' => $job['title']],
+                $job + ['location' => 'NUH', 'salary' => 'Competitive', 'status' => 'active']
+            );
+        }
     }
 }

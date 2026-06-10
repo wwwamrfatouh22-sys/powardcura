@@ -2,60 +2,63 @@
 
 namespace Database\Seeders;
 
+use App\Models\Appointment;
 use App\Models\LabTest;
 use App\Models\Patient;
 use App\Models\RadiologyResult;
+use App\Models\Staff;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class MedicalResultsSeeder extends Seeder
 {
     public function run(): void
     {
-        $patient = Patient::updateOrCreate(
-            ['national_id' => '44444444444444'],
-            [
-                'full_name' => 'Test Patient',
-                'dob' => '2000-01-01',
-                'phone' => '01000000000',
-                'password' => Hash::make(env('SEED_PATIENT_PASSWORD', 'Patient@12345')),
-            ]
-        );
+        if (! Schema::hasTable('patients')) {
+            return;
+        }
 
-        LabTest::updateOrCreate(
-            ['patient_id' => $patient->id, 'title' => 'Complete Blood Count'],
-            [
-                'description' => 'Routine blood test',
-                'file_name' => 'lab1.pdf',
-                'test_date' => now()->subDays(3)->toDateString(),
-            ]
-        );
+        $patients = Patient::query()->orderBy('id')->take(12)->get()->values();
+        $appointments = Schema::hasTable('appointments')
+            ? Appointment::query()->where('reason', 'like', 'DEMO-APPT-%')->orderBy('id')->get()->values()
+            : collect();
+        $labStaffId = Schema::hasTable('staff') ? Staff::query()->whereIn('role', ['lab', 'laboratory', 'radiology_lab'])->value('id') : null;
+        $radiologyStaffId = Schema::hasTable('staff') ? Staff::query()->whereIn('role', ['radiology', 'radiology_lab'])->value('id') : null;
 
-        LabTest::updateOrCreate(
-            ['patient_id' => $patient->id, 'title' => 'Liver Function Test'],
-            [
-                'description' => 'LFT report',
-                'file_name' => 'lab2.pdf',
-                'test_date' => now()->subDays(2)->toDateString(),
-            ]
-        );
+        foreach ($patients as $index => $patient) {
+            $appointment = $appointments->isNotEmpty() ? $appointments[$index % $appointments->count()] : null;
 
-        RadiologyResult::updateOrCreate(
-            ['patient_id' => $patient->id, 'title' => 'Chest X-Ray'],
-            [
-                'description' => 'Chest radiology report',
-                'file_name' => 'radio1.pdf',
-                'scan_date' => now()->subDays(4)->toDateString(),
-            ]
-        );
+            if (Schema::hasTable('lab_tests')) {
+                LabTest::updateOrCreate(
+                    ['patient_id' => $patient->id, 'title' => 'Demo Complete Blood Count'],
+                    [
+                        'appointment_id' => $appointment?->id,
+                        'patient_phone' => $patient->phone,
+                        'uploaded_by_staff_id' => $labStaffId,
+                        'result_type' => 'laboratory',
+                        'description' => 'CBC values within expected demo ranges.',
+                        'notes' => 'Generated demo laboratory result.',
+                        'file_name' => 'demo-cbc-'.($index + 1).'.pdf',
+                        'test_date' => now()->subDays(($index % 10) + 1)->toDateString(),
+                    ]
+                );
+            }
 
-        RadiologyResult::updateOrCreate(
-            ['patient_id' => $patient->id, 'title' => 'MRI Brain'],
-            [
-                'description' => 'Brain MRI report',
-                'file_name' => 'radio2.pdf',
-                'scan_date' => now()->subDay()->toDateString(),
-            ]
-        );
+            if (Schema::hasTable('radiology_results')) {
+                RadiologyResult::updateOrCreate(
+                    ['patient_id' => $patient->id, 'title' => 'Demo Chest X-Ray'],
+                    [
+                        'appointment_id' => $appointment?->id,
+                        'patient_phone' => $patient->phone,
+                        'uploaded_by_staff_id' => $radiologyStaffId,
+                        'result_type' => 'radiology',
+                        'description' => 'No acute cardiopulmonary abnormality in this demo result.',
+                        'notes' => 'Generated demo radiology result.',
+                        'file_name' => 'demo-xray-'.($index + 1).'.pdf',
+                        'scan_date' => now()->subDays(($index % 10) + 1)->toDateString(),
+                    ]
+                );
+            }
+        }
     }
 }

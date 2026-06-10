@@ -5,11 +5,16 @@ namespace Database\Seeders;
 use App\Models\Department;
 use App\Models\MedicalPosition;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class MedicalPositionSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! Schema::hasTable('medical_positions') || ! Schema::hasTable('departments')) {
+            return;
+        }
+
         $departments = Department::query()->orderBy('name_en')->pluck('id')->values();
 
         if ($departments->isEmpty()) {

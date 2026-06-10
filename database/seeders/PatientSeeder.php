@@ -8,48 +8,57 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class PatientSeeder extends Seeder
 {
     public function run(): void
     {
-        foreach ($this->patients() as $index => $data) {
-            $password = Hash::make(env('SEED_PATIENT_PASSWORD', 'Patient@12345'));
+        if (! Schema::hasTable('users') || ! Schema::hasTable('patients')) {
+            return;
+        }
 
-            $user = User::updateOrCreate(
-                ['email' => $data['email']],
-                [
-                    'name' => $data['full_name'],
-                    'national_id' => $data['national_id'],
-                    'password' => $password,
-                ]
-            );
+        foreach ($this->patients() as $index => $data) {
+            $user = User::firstOrNew(['email' => $data['email']]);
+            $user->fill([
+                'name' => $data['full_name'],
+                'national_id' => $data['national_id'],
+            ]);
+
+            if (! $user->password) {
+                $user->password = Hash::make(env('SEED_PATIENT_PASSWORD', 'Patient@12345'));
+            }
+
+            $user->save();
 
             $dob = Carbon::parse($data['dob']);
+            $patient = Patient::withTrashed()->firstOrNew(['national_id' => $data['national_id']]);
+            $patient->fill([
+                'user_id' => $user->id,
+                'full_name' => $data['full_name'],
+                'file_number' => 'PAT'.str_pad((string) ($index + 1), 6, '0', STR_PAD_LEFT),
+                'blood_type' => $data['blood_type'],
+                'gender' => $data['gender'],
+                'age' => $dob->age,
+                'dob' => $dob->toDateString(),
+                'phone' => $data['phone'],
+                'address' => $data['address'],
+                'blood_pressure' => $data['blood_pressure'],
+                'pulse_rate' => $data['pulse_rate'],
+                'temperature' => $data['temperature'],
+                'weight' => $data['weight'],
+                'medical_condition' => $data['medical_condition'],
+                'last_visit' => now()->subDays($index % 14)->setTime(10 + ($index % 7), 0),
+            ]);
+            $patient->deleted_at = null;
 
-            $patient = Patient::updateOrCreate(
-                ['national_id' => $data['national_id']],
-                [
-                    'user_id' => $user->id,
-                    'full_name' => $data['full_name'],
-                    'file_number' => 'PAT' . str_pad((string) ($index + 1), 6, '0', STR_PAD_LEFT),
-                    'blood_type' => $data['blood_type'],
-                    'gender' => $data['gender'],
-                    'age' => $dob->age,
-                    'dob' => $dob->toDateString(),
-                    'phone' => $data['phone'],
-                    'address' => $data['address'],
-                    'password' => $password,
-                    'blood_pressure' => $data['blood_pressure'],
-                    'pulse_rate' => $data['pulse_rate'],
-                    'temperature' => $data['temperature'],
-                    'weight' => $data['weight'],
-                    'medical_condition' => $data['medical_condition'],
-                    'last_visit' => now()->subDays($index % 14)->setTime(10 + ($index % 7), 0),
-                ]
-            );
+            if (! $patient->password) {
+                $patient->password = $user->password;
+            }
 
-            foreach ($data['medications'] as $medication) {
+            $patient->save();
+
+            foreach (Schema::hasTable('medications') ? $data['medications'] : [] as $medication) {
                 Medication::updateOrCreate(
                     [
                         'patient_id' => $patient->id,

@@ -505,7 +505,10 @@
 
     <script>
     const GROQ_KEYS = [
-        "{{ env('GROQ_API_KEY') }}"
+        "{{ env('GROQ_API_KEY_1') }}",
+        "{{ env('GROQ_API_KEY_2') }}",
+        "{{ env('GROQ_API_KEY_3') }}",
+        "{{ env('GROQ_API_KEY_4') }}"
     ];
 
     setInterval(function() {

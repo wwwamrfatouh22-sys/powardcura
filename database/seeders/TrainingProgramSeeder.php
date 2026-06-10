@@ -5,11 +5,16 @@ namespace Database\Seeders;
 use App\Models\Department;
 use App\Models\TrainingProgram;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class TrainingProgramSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! Schema::hasTable('training_programs')) {
+            return;
+        }
+
         $departmentIds = Department::query()->orderBy('name_en')->pluck('id')->values();
 
         foreach ($this->programs() as $index => $program) {
