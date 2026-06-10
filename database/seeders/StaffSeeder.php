@@ -17,10 +17,24 @@ class StaffSeeder extends Seeder
 
         $staff = [
             [
+                'name' => 'admin',
+                'full_name' => 'admin',
+                'email' => 'admin@test.com',
+                'role' => 'receptionist',
+                'status' => 'active',
+            ],
+            [
                 'name' => 'Staff Admin',
                 'full_name' => 'Staff Admin',
                 'email' => 'staff@nuh.com',
                 'role' => 'admin_assistant',
+                'status' => 'active',
+            ],
+            [
+                'name' => 'Amr Fatouh',
+                'full_name' => 'Amr Fatouh',
+                'email' => 'staff22@nuh.com',
+                'role' => 'radiology_lab',
                 'status' => 'active',
             ],
             [
@@ -79,7 +93,7 @@ class StaffSeeder extends Seeder
             $record->deleted_at = null;
 
             if (! $record->password) {
-                $record->password = Hash::make(env('SEED_STAFF_PASSWORD', 'Staff@12345'));
+                $record->password = Hash::make('password123');
             }
 
             $record->save();

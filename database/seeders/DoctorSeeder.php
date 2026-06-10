@@ -10,7 +10,6 @@ use App\Models\Room;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 class DoctorSeeder extends Seeder
 {
@@ -20,42 +19,31 @@ class DoctorSeeder extends Seeder
             return;
         }
 
-        $departmentDoctors = $this->departmentDoctors();
-        $fallbackDoctors = $this->fallbackDoctors();
-        $fallbackIndex = 0;
         $rooms = Schema::hasTable('rooms')
             ? Room::query()->orderBy('room_number')->get()->values()
             : collect();
 
-        Department::query()
-            ->orderBy('name_en')
-            ->get()
-            ->each(function (Department $department, int $departmentIndex) use ($departmentDoctors, $fallbackDoctors, $rooms, &$fallbackIndex): void {
-                $templates = $departmentDoctors[$department->name_en] ?? [];
+        foreach ($this->localDoctors() as $doctorIndex => $template) {
+            $department = Department::query()->where('name_en', $template['department'])->first();
 
-                foreach (range(0, 1) as $doctorIndex) {
-                    $template = $templates[$doctorIndex] ?? $fallbackDoctors[$fallbackIndex % count($fallbackDoctors)];
-                    $fallbackIndex++;
+            if (! $department) {
+                continue;
+            }
 
-                    $doctor = $this->upsertDoctor($department, $template, $doctorIndex);
-                    $room = $rooms->isNotEmpty()
-                        ? $rooms[($departmentIndex + $doctorIndex) % $rooms->count()]
-                        : null;
-                    $this->ensureSchedule($doctor, $room?->id);
-                }
+            $doctor = $this->upsertDoctor($department, $template, $doctorIndex);
+            $room = $rooms->isNotEmpty() ? $rooms[$doctorIndex % $rooms->count()] : null;
+            $this->ensureSchedule($doctor, $room?->id);
+        }
 
-                $this->ensureDepartmentHead($department);
-            });
+        Department::query()->each(fn (Department $department) => $this->ensureDepartmentHead($department));
     }
 
     /**
-     * @param  array{name:string,specialization:string,experience:int,rating:float,image?:string}  $template
+     * @param  array{department:string,name:string,email:string,specialization:string,experience:int,rating:float,image?:string,has_private_clinic?:bool}  $template
      */
     private function upsertDoctor(Department $department, array $template, int $index): Doctor
     {
-        $email = $this->emailFor($department, $template['name']);
-
-        $doctor = Doctor::withTrashed()->firstOrNew(['email' => $email]);
+        $doctor = Doctor::withTrashed()->firstOrNew(['email' => $template['email']]);
         $doctor->fill([
             'department_id' => $department->id,
             'name' => $template['name'],
@@ -64,12 +52,12 @@ class DoctorSeeder extends Seeder
             'experience' => $template['experience'],
             'rating' => $template['rating'],
             'status' => 'Available',
-            'has_private_clinic' => false,
+            'has_private_clinic' => $template['has_private_clinic'] ?? false,
         ]);
         $doctor->deleted_at = null;
 
         if (! $doctor->password) {
-            $doctor->password = Hash::make(env('SEED_DOCTOR_PASSWORD', 'Doctor@12345'));
+            $doctor->password = Hash::make('password123');
         }
 
         $doctor->save();
@@ -130,14 +118,6 @@ class DoctorSeeder extends Seeder
             'head_name' => $head->name,
             'status' => 'active',
         ]);
-    }
-
-    private function emailFor(Department $department, string $name): string
-    {
-        $departmentSlug = Str::slug($department->name_en) ?: 'department';
-        $nameSlug = Str::slug(str_replace('Dr.', '', $name)) ?: 'doctor';
-
-        return "{$nameSlug}.{$departmentSlug}@nuh.example";
     }
 
     private function departmentDoctors(): array
@@ -212,6 +192,51 @@ class DoctorSeeder extends Seeder
                 ['name' => 'Dr. Mai Samir / د. مي سمير', 'specialization' => 'Interventional Radiology Specialist', 'experience' => 9, 'rating' => 4.7],
             ],
         ];
+    }
+
+    private function localDoctors(): array
+    {
+        $emails = [
+            'Internal Medicine' => ['ahmed-hassan-d-ahmd-hsn.internal-medicine@nuh.example', 'mariam-adel-d-mrym-aaadl.internal-medicine@nuh.example'],
+            'General Surgery' => ['karim-nabil-d-krym-nbyl.general-surgery@nuh.example', 'salma-youssef-d-slm-yosf.general-surgery@nuh.example'],
+            'Orthopedics' => ['omar-el-sayed-d-aamr-alsyd.orthopedics@nuh.example', 'farida-samir-d-fryd-smyr.orthopedics@nuh.example'],
+            'Obstetrics and Gynecology' => ['nourhan-fathy-d-norhan-fthy.obstetrics-and-gynecology@nuh.example', 'hana-mahmoud-d-hna-mhmod.obstetrics-and-gynecology@nuh.example'],
+            'Cardiology & Catheterization' => ['youssef-mansour-d-yosf-mnsor.cardiology-catheterization@nuh.example', 'laila-mostafa-d-lyl-mstf.cardiology-catheterization@nuh.example'],
+            'Intensive Care Unit (ICU)' => ['hisham-fouad-d-hsham-foad.intensive-care-unit-icu@nuh.example', 'dina-magdy-d-dyna-mgdy.intensive-care-unit-icu@nuh.example'],
+            'Urology' => ['mahmoud-tarek-d-mhmod-tark.urology@nuh.example', 'rana-khaled-d-rna-khald.urology@nuh.example'],
+            'Dialysis / Nephrology' => ['amr-shawky-d-aamro-shoky.dialysis-nephrology@nuh.example', 'menna-ibrahim-d-mn-abrahym.dialysis-nephrology@nuh.example'],
+            'Pediatrics' => ['hany-galal-d-hany-glal.pediatrics@nuh.example', 'yasmin-sherif-d-yasmyn-shryf.pediatrics@nuh.example'],
+            'Ophthalmology' => ['sherif-kamal-d-shryf-kmal.ophthalmology@nuh.example', 'aya-nader-d-ay-nadr.ophthalmology@nuh.example'],
+            'ENT (Ear, Nose, and Throat)' => ['tamer-amin-d-tamr-amyn.ent-ear-nose-and-throat@nuh.example', 'reem-ashraf-d-rym-ashrf.ent-ear-nose-and-throat@nuh.example'],
+            'Neurosurgery' => ['nader-wahba-d-nadr-ohb.neurosurgery@nuh.example', 'malak-saeed-d-mlk-saayd.neurosurgery@nuh.example'],
+            'Neurology & Psychiatry' => ['sameh-lotfy-d-samh-ltfy.neurology-psychiatry@nuh.example', 'nada-fawzy-d-nd-fozy.neurology-psychiatry@nuh.example'],
+            'Chest / Pulmonology' => ['basel-hamdy-d-basl-hmdy.chest-pulmonology@nuh.example', 'heba-mokhtar-d-hb-mkhtar.chest-pulmonology@nuh.example'],
+            'Dermatology' => ['seif-el-din-d-syf-aldyn.dermatology@nuh.example', 'joudy-ehab-d-gody-ayhab.dermatology@nuh.example'],
+            'Emergency Physicians' => ['mostafa-raouf-d-mstf-roof.emergency-physicians@nuh.example', 'nermine-adel-d-nrmyn-aaadl.emergency-physicians@nuh.example'],
+            'Radiology' => ['khaled-zaki-d-khald-zky.radiology@nuh.example', 'mai-samir-d-my-smyr.radiology@nuh.example'],
+        ];
+
+        $doctors = [
+            ['department' => 'Neurology & Psychiatry', 'name' => 'Dr. Sarah Johnson', 'email' => 'doctor1@nuh.com', 'specialization' => 'Cardiologist', 'image' => 'doctor1.jpg', 'experience' => 10, 'rating' => 4.3, 'has_private_clinic' => true],
+            ['department' => 'Neurology & Psychiatry', 'name' => 'Dr. Michael Chen', 'email' => 'doctor2@nuh.com', 'specialization' => 'Cardiologist', 'image' => 'doctor2.jpg', 'experience' => 8, 'rating' => 4.3, 'has_private_clinic' => true],
+            ['department' => 'Radiology', 'name' => 'Dr. Aisha Patel', 'email' => 'doctor3@nuh.com', 'specialization' => 'Neurologist', 'image' => 'doctor3.jpg', 'experience' => 9, 'rating' => 4.9, 'has_private_clinic' => true],
+            ['department' => 'Orthopedics', 'name' => 'Dr. James Wilson', 'email' => 'doctor4@nuh.com', 'specialization' => 'Orthopedic Surgeon', 'image' => 'doctor4.jpg', 'experience' => 15, 'rating' => 4.6, 'has_private_clinic' => true],
+            ['department' => 'Radiology', 'name' => 'Amr fathelbab', 'email' => 'amrfatouh58@gmail.com', 'specialization' => 'Cardiologist', 'image' => 'logo_Image.png', 'experience' => 5, 'rating' => 4.0, 'has_private_clinic' => true],
+            ['department' => 'Chest / Pulmonology', 'name' => 'Amr fathelbab salem', 'email' => 'www.amrfatouh22@gmail.com', 'specialization' => 'chest', 'image' => 'logo_Image.png', 'experience' => 3, 'rating' => 4.5, 'has_private_clinic' => true],
+            ['department' => 'Cardiology & Catheterization', 'name' => 'amrfatouh', 'email' => 'amr@gmail.com', 'specialization' => 'hgrgf', 'image' => 'logo_Image.png', 'experience' => 4, 'rating' => 4.0, 'has_private_clinic' => true],
+        ];
+
+        foreach ($this->departmentDoctors() as $department => $templates) {
+            foreach ($templates as $index => $template) {
+                $doctors[] = [
+                    'department' => $department,
+                    'email' => $emails[$department][$index],
+                    ...$template,
+                ];
+            }
+        }
+
+        return $doctors;
     }
 
     private function fallbackDoctors(): array

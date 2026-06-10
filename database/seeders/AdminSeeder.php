@@ -18,7 +18,7 @@ class AdminSeeder extends Seeder
         $admin = Admin::firstOrNew(['email' => 'admin@gmail.com']);
 
         if (! $admin->password) {
-            $admin->password = Hash::make(env('SEED_ADMIN_PASSWORD', 'Admin@12345'));
+            $admin->password = Hash::make('password123');
         }
 
         $admin->save();
