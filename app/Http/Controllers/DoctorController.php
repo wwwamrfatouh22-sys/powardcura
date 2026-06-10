@@ -10,6 +10,7 @@ use App\Models\LabRequest;
 use App\Models\LeaveRequest;
 use App\Models\RadiologyRequest;
 use App\Services\Scheduling\SlotGenerationService;
+use App\Support\AppointmentSecurity;
 use App\Support\PrivateClinicBookingSupport;
 use App\Support\ProtectedFile;
 use App\Support\TableFilters;
@@ -26,8 +27,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DoctorController extends Controller
 {
-    private const CANCELED_STATUSES = ['Canceled', 'Cancelled', 'canceled', 'cancelled'];
-
     protected function annotateAppointmentDates($appointments)
     {
         $today = now()->toDateString();
@@ -71,20 +70,20 @@ class DoctorController extends Controller
             $selectedType = 'hospital';
         }
 
-        $bookedSlots = Appointment::query()
-            ->where('doctor_id', $doctor->id)
-            ->whereDate('date', $selectedDate)
-            ->where(function ($query): void {
-                $query->whereNull('status')
-                    ->orWhereNotIn('status', self::CANCELED_STATUSES);
-            })
+        $slotEndDate = CarbonImmutable::parse($selectedDate)
+            ->addDays(6)
+            ->toDateString();
+        $blockingAppointments = AppointmentSecurity::blockingAppointments($doctor->id, $selectedDate, $slotEndDate)
+            ->get(['id', 'date', 'time', 'type']);
+        $bookedSlots = $blockingAppointments
+            ->filter(fn (Appointment $appointment) => CarbonImmutable::parse((string) $appointment->date)->toDateString() === $selectedDate)
             ->pluck('time')
-            ->map(fn ($time) => substr((string) $time, 0, 5))
+            ->map(fn ($time) => AppointmentSecurity::normalizeTime((string) $time))
             ->unique()
             ->values()
             ->all();
 
-        $slotDays = $this->slotDaysForDoctor($doctor, $selectedType, $selectedDate);
+        $slotDays = $this->slotDaysForDoctor($doctor, $selectedType, $selectedDate, 7, $blockingAppointments);
 
         return view('doctors.show', compact('doctor', 'selectedDate', 'selectedType', 'bookedSlots', 'slotDays'));
     }
@@ -98,32 +97,27 @@ class DoctorController extends Controller
 
         $type = PrivateClinicBookingSupport::normalizeType($validated['type'] ?? 'hospital');
         $doctor->loadMissing('privateClinic');
-        $slotDays = $this->slotDaysForDoctor($doctor, $type, $validated['date'], 1);
+
+        $blockingAppointments = AppointmentSecurity::blockingAppointments($doctor->id, $validated['date'])
+            ->get(['id', 'date', 'time', 'type']);
+        $bookedSlots = $blockingAppointments
+            ->when(
+                ($validated['type'] ?? null) !== null,
+                fn (Collection $appointments) => $appointments->where('type', $type)
+            )
+            ->pluck('time')
+            ->map(fn ($time) => AppointmentSecurity::normalizeTime((string) $time))
+            ->unique()
+            ->values()
+            ->all();
+
+        $slotDays = $this->slotDaysForDoctor($doctor, $type, $validated['date'], 1, $blockingAppointments);
         $selectedDay = $slotDays[0] ?? [
             'date' => $validated['date'],
             'available_count' => 0,
             'slots' => [],
             'doctor_available' => false,
         ];
-
-        $bookedSlotsQuery = Appointment::query()
-            ->where('doctor_id', $doctor->id)
-            ->whereDate('date', $validated['date'])
-            ->where(function ($query): void {
-                $query->whereNull('status')
-                    ->orWhereNotIn('status', self::CANCELED_STATUSES);
-            });
-
-        if (($validated['type'] ?? null) !== null) {
-            $bookedSlotsQuery->where('type', $type);
-        }
-
-        $bookedSlots = $bookedSlotsQuery
-            ->pluck('time')
-            ->map(fn ($time) => substr((string) $time, 0, 5))
-            ->unique()
-            ->values()
-            ->all();
 
         return response()->json([
             'doctor_id' => $doctor->id,
@@ -141,53 +135,42 @@ class DoctorController extends Controller
     /**
      * @return array<int, array{date:string,label:string,available_count:int,doctor_available:bool,slots:array<int,array<string,mixed>>}>
      */
-    private function slotDaysForDoctor(Doctor $doctor, string $type, string $startDate, int $days = 7): array
+    private function slotDaysForDoctor(
+        Doctor $doctor,
+        string $type,
+        string $startDate,
+        int $days = 7,
+        ?Collection $blockingAppointments = null
+    ): array
     {
         $scheduleType = $type === 'private' ? 'private_clinic' : 'hospital';
         $timezone = config('app.timezone', 'Africa/Cairo');
         $start = CarbonImmutable::parse($startDate, $timezone)->startOfDay();
         $end = $start->addDays(max($days - 1, 0));
 
-        $generatedSlots = collect(app(SlotGenerationService::class)->generate($doctor->id, $scheduleType, $start, $end))
+        $generatedSlots = collect(app(SlotGenerationService::class)->availability(
+            $doctor->id,
+            $scheduleType,
+            $start,
+            $end,
+            null,
+            $blockingAppointments
+        ))
             ->groupBy('date');
-
-        $appointments = Appointment::query()
-            ->where('doctor_id', $doctor->id)
-            ->where('type', $type)
-            ->where(function ($query): void {
-                $query->whereNull('status')
-                    ->orWhereNotIn('status', self::CANCELED_STATUSES);
-            })
-            ->whereDate('date', '>=', $start->toDateString())
-            ->whereDate('date', '<=', $end->toDateString())
-            ->get(['date', 'time'])
-            ->groupBy(fn (Appointment $appointment) => CarbonImmutable::parse((string) $appointment->date)->toDateString());
 
         $daysPayload = [];
 
         for ($offset = 0; $offset < $days; $offset++) {
             $date = $start->addDays($offset);
             $dateString = $date->toDateString();
-            $available = $generatedSlots->get($dateString, collect())
+            $slots = $generatedSlots->get($dateString, collect())
                 ->map(fn (array $slot) => [
-                    'time' => substr((string) $slot['start_time'], 0, 5),
-                    'end_time' => substr((string) $slot['end_time'], 0, 5),
-                    'available' => true,
-                    'status' => 'available',
-                    'label' => 'Available',
-                ]);
-            $booked = $appointments->get($dateString, collect())
-                ->map(fn (Appointment $appointment) => [
-                    'time' => substr((string) $appointment->time, 0, 5),
-                    'end_time' => null,
-                    'available' => false,
-                    'status' => 'booked',
-                    'label' => 'Slot is already booked',
-                ]);
-
-            $slots = $booked
-                ->concat($available)
-                ->unique('time')
+                    'time' => AppointmentSecurity::normalizeTime((string) $slot['start_time']),
+                    'end_time' => AppointmentSecurity::normalizeTime((string) $slot['end_time']),
+                    'available' => (bool) $slot['available'],
+                    'status' => (string) $slot['status'],
+                    'label' => (string) $slot['label'],
+                ])
                 ->sortBy('time')
                 ->values()
                 ->all();

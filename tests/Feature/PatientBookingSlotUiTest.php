@@ -53,7 +53,7 @@ class PatientBookingSlotUiTest extends TestCase
             'doctor_id' => $doctor->id,
             'department_id' => $doctor->department_id,
             'date' => '2026-06-08',
-            'time' => '09:00',
+            'time' => '09:00:00',
             'status' => 'Confirmed',
             'first_name' => 'Booked',
             'last_name' => 'Patient',
@@ -73,6 +73,33 @@ class PatientBookingSlotUiTest extends TestCase
             ->assertJsonPath('slots.0.label', 'Slot is already booked')
             ->assertJsonPath('slots.1.time', '09:30')
             ->assertJsonPath('slots.1.available', true);
+    }
+
+    public function test_canceled_appointment_does_not_block_visible_slot(): void
+    {
+        $doctor = $this->doctorWithSchedule();
+
+        Appointment::query()->create([
+            'doctor_id' => $doctor->id,
+            'department_id' => $doctor->department_id,
+            'date' => '2026-06-08',
+            'time' => '09:00:00',
+            'status' => ' CANCELED ',
+            'first_name' => 'Canceled',
+            'last_name' => 'Patient',
+            'phone' => '01000000000',
+            'type' => 'hospital',
+        ]);
+
+        $this->getJson(route('doctors.booked-slots', [
+            'doctor' => $doctor,
+            'date' => '2026-06-08',
+            'type' => 'hospital',
+        ]))
+            ->assertOk()
+            ->assertJsonPath('slots.0.time', '09:00')
+            ->assertJsonPath('slots.0.available', true)
+            ->assertJsonPath('slots.0.label', 'Available');
     }
 
     public function test_confirmation_details_page_shows_stale_slot_feedback(): void

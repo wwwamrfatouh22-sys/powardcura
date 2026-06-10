@@ -527,36 +527,38 @@ class AppointmentController extends Controller
     {
         $normalizedTime = AppointmentSecurity::normalizeTime($time);
 
-        $appointmentQuery = Appointment::query()
-            ->where('doctor_id', $doctor->id)
-            ->whereDate('date', $date)
-            ->where(function ($query): void {
-                $query->whereNull('status')
-                    ->orWhereNotIn('status', ['Canceled', 'Cancelled', 'canceled', 'cancelled']);
-            })
-            ->where(function ($query) use ($normalizedTime): void {
-                $query->where('time', $normalizedTime)
-                    ->orWhere('time', $normalizedTime . ':00');
-            })
-            ->lockForUpdate();
-
-        if ($ignoreAppointmentId !== null) {
-            $appointmentQuery->whereKeyNot($ignoreAppointmentId);
-        }
-
-        $appointmentExists = $appointmentQuery->exists();
-
-        if ($appointmentExists) {
-            throw ValidationException::withMessages([
-                'time' => 'Slot no longer available',
-            ]);
-        }
-
         $scheduleType = $this->scheduleTypeForBookingType($bookingType);
         $duration = $this->appointmentDurationMinutes($doctor->id, $scheduleType);
         $timezone = config('app.timezone', 'Africa/Cairo');
         $slotStart = CarbonImmutable::parse($date . ' ' . $normalizedTime, $timezone);
         $slotEnd = $slotStart->addMinutes($duration);
+
+        $appointmentOverlap = AppointmentSecurity::blockingAppointments(
+            $doctor->id,
+            $date,
+            $date,
+            $ignoreAppointmentId
+        )
+            ->lockForUpdate()
+            ->get(['date', 'time'])
+            ->contains(function (Appointment $appointment) use ($date, $duration, $timezone, $slotStart, $slotEnd): bool {
+                $appointmentTime = AppointmentSecurity::normalizeTime((string) $appointment->time);
+
+                if ($appointmentTime === '') {
+                    return true;
+                }
+
+                $appointmentStart = CarbonImmutable::parse($date . ' ' . $appointmentTime, $timezone);
+                $appointmentEnd = $appointmentStart->addMinutes($duration);
+
+                return $slotStart->lt($appointmentEnd) && $slotEnd->gt($appointmentStart);
+            });
+
+        if ($appointmentOverlap) {
+            throw ValidationException::withMessages([
+                'time' => 'Slot no longer available',
+            ]);
+        }
 
         $blockedExists = BlockedTime::query()
             ->where('doctor_id', $doctor->id)

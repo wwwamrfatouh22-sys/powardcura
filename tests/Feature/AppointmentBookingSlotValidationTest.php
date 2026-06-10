@@ -52,6 +52,18 @@ class AppointmentBookingSlotValidationTest extends TestCase
         [$doctor] = $this->doctorWithAvailability();
         $patient = $this->patient();
 
+        $this->getJson(route('doctors.booked-slots', [
+            'doctor' => $doctor,
+            'date' => '2026-05-04',
+            'type' => 'hospital',
+        ]))
+            ->assertOk()
+            ->assertJsonFragment([
+                'time' => '09:00',
+                'available' => true,
+                'label' => 'Available',
+            ]);
+
         $this->actingAs($patient, 'patient')
             ->post(route('appointments.review'), $this->reviewPayload($doctor, '09:00'))
             ->assertRedirect(route('appointments.payment'));
@@ -130,6 +142,49 @@ class AppointmentBookingSlotValidationTest extends TestCase
             'doctor_id' => $doctor->id,
             'date' => '2026-05-04',
             'time' => '10:00',
+        ]);
+    }
+
+    public function test_canceled_appointment_is_shown_available_and_can_be_booked(): void
+    {
+        [$doctor] = $this->doctorWithAvailability();
+        $patient = $this->patient();
+
+        Appointment::query()->create([
+            'doctor_id' => $doctor->id,
+            'department_id' => $doctor->department_id,
+            'date' => '2026-05-04',
+            'time' => '09:00:00',
+            'status' => ' Cancelled ',
+            'first_name' => 'Canceled',
+            'last_name' => 'Patient',
+            'phone' => '01000000000',
+            'type' => 'hospital',
+        ]);
+
+        $this->getJson(route('doctors.booked-slots', [
+            'doctor' => $doctor,
+            'date' => '2026-05-04',
+            'type' => 'hospital',
+        ]))
+            ->assertOk()
+            ->assertJsonFragment([
+                'time' => '09:00',
+                'available' => true,
+                'label' => 'Available',
+            ]);
+
+        $this->actingAs($patient, 'patient')
+            ->withSession(['booking_draft' => $this->bookingDraft($doctor, '09:00')])
+            ->post(route('appointments.confirm'), ['payment_method' => 'pay_at_hospital'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('appointments', [
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'date' => '2026-05-04',
+            'time' => '09:00',
+            'status' => 'Confirmed',
         ]);
     }
 

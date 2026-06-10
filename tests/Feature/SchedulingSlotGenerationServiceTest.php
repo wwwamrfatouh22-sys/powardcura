@@ -132,6 +132,32 @@ class SchedulingSlotGenerationServiceTest extends TestCase
         $this->assertSame(['09:00', '10:00', '10:30'], array_column($slots, 'start_time'));
     }
 
+    public function test_status_and_time_are_normalized_when_checking_appointments(): void
+    {
+        [$doctor, $availability] = $this->doctorWithAvailability(duration: 30, break: 0);
+        $this->addSchedule($availability, 1, '09:00', '10:00');
+
+        Appointment::query()->create([
+            'doctor_id' => $doctor->id,
+            'department_id' => $doctor->department_id,
+            'date' => '2026-05-04',
+            'time' => '09:00:00',
+            'status' => ' confirmed ',
+            'first_name' => 'Booked',
+            'last_name' => 'Patient',
+            'phone' => '01000000000',
+            'type' => 'hospital',
+        ]);
+
+        $slots = $this->service()->availability($doctor->id, 'hospital', '2026-05-04');
+
+        $this->assertSame('09:00', $slots[0]['start_time']);
+        $this->assertFalse($slots[0]['available']);
+        $this->assertSame('booked', $slots[0]['status']);
+        $this->assertSame('09:30', $slots[1]['start_time']);
+        $this->assertTrue($slots[1]['available']);
+    }
+
     public function test_min_notice_blocks_near_slots(): void
     {
         [$doctor, $availability] = $this->doctorWithAvailability(duration: 30, break: 0, minNotice: 90);

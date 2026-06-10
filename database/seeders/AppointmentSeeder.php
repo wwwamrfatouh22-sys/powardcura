@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Payment;
+use App\Support\AppointmentSecurity;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
@@ -101,10 +102,12 @@ class AppointmentSeeder extends Seeder
         $candidate = Carbon::parse($date.' '.$time);
 
         for ($attempt = 0; $attempt < 60; $attempt++) {
-            $occupied = Appointment::query()
-                ->where('doctor_id', $doctorId)
-                ->whereDate('date', $candidate->toDateString())
-                ->where('time', $candidate->format('H:i'))
+            $normalizedTime = AppointmentSecurity::normalizeTime($candidate->format('H:i'));
+            $occupied = AppointmentSecurity::blockingAppointments($doctorId, $candidate->toDateString())
+                ->where(function ($query) use ($normalizedTime): void {
+                    $query->where('time', $normalizedTime)
+                        ->orWhere('time', $normalizedTime . ':00');
+                })
                 ->where('type', 'hospital')
                 ->where('reason', 'not like', $marker.'%')
                 ->exists();

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\AppointmentSecurity;
 use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
@@ -94,7 +95,7 @@ class Appointment extends Model
 
     public function isCanceled(): bool
     {
-        return in_array((string) $this->status, ['Canceled', 'Cancelled', 'canceled', 'cancelled'], true);
+        return AppointmentSecurity::isCanceledStatus($this->status);
     }
 
     public function canBeManagedByPatient(): bool
