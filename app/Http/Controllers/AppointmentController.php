@@ -45,6 +45,18 @@ class AppointmentController extends Controller
         $normalizedTime = AppointmentSecurity::normalizeTime($time);
         $slotStillAvailable = true;
 
+        Log::debug('Booking form: selected slot values.', [
+            'doctor_id' => $doctor->id,
+            'posted_type' => request('type'),
+            'posted_date' => request('date'),
+            'posted_time' => $time,
+            'booking_type' => $selectedType,
+            'date' => $selectedDate,
+            'time' => $time,
+            'normalized_time' => $normalizedTime,
+            'schedule_type' => $this->scheduleTypeForBookingType($selectedType),
+        ]);
+
         try {
             $this->ensureGeneratedSlotAvailable($doctor, $selectedType, $selectedDate, $normalizedTime);
         } catch (ValidationException) {
@@ -54,6 +66,7 @@ class AppointmentController extends Controller
         return view('appointments.create', compact(
             'doctor',
             'time',
+            'normalizedTime',
             'selectedDate',
             'estimatedAmount',
             'selectedType',
@@ -69,6 +82,18 @@ class AppointmentController extends Controller
         $type = PrivateClinicBookingSupport::normalizeType($data['type']);
         $normalizedTime = AppointmentSecurity::normalizeTime((string) $data['time']);
         $selectedDate = $data['date'] ?? now()->toDateString();
+
+        Log::debug('Booking review: received form values.', [
+            'doctor_id' => $doctor->id,
+            'posted_type' => $request->input('type'),
+            'posted_date' => $request->input('date'),
+            'posted_time' => $request->input('time'),
+            'booking_type' => $type,
+            'date' => $selectedDate,
+            'time' => $data['time'],
+            'normalized_time' => $normalizedTime,
+            'schedule_type' => $this->scheduleTypeForBookingType($type),
+        ]);
 
         if ($type === 'private' && !PrivateClinicBookingSupport::hasPrivateClinic($doctor)) {
             return back()
@@ -108,6 +133,11 @@ class AppointmentController extends Controller
 
         Session::put('booking_draft', $draft);
 
+        Log::debug('Booking review: session draft stored.', $this->bookingLogContext($draft, [
+            'normalized_time' => $normalizedTime,
+            'schedule_type' => $this->scheduleTypeForBookingType($type),
+        ]));
+
         return redirect()->route('appointments.payment');
     }
 
@@ -140,6 +170,13 @@ class AppointmentController extends Controller
         }
 
         $doctor = Doctor::with('privateClinic')->findOrFail($draft['doctor_id']);
+
+        Log::debug('Booking confirm: session draft loaded.', $this->bookingLogContext($draft, [
+            'posted_payment_method' => $request->input('payment_method'),
+            'normalized_time' => AppointmentSecurity::normalizeTime((string) ($draft['time'] ?? '')),
+            'schedule_type' => $this->scheduleTypeForBookingType((string) ($draft['type'] ?? '')),
+        ]));
+
         if ($draft['type'] === 'private' && !PrivateClinicBookingSupport::hasPrivateClinic($doctor)) {
             Session::forget('booking_draft');
             return redirect()
@@ -237,6 +274,19 @@ class AppointmentController extends Controller
             ]));
 
             if ($this->isAppointmentSlotConflict($exception)) {
+                $this->logSlotRejection(
+                    'database_unique_constraint',
+                    $doctor,
+                    $draft['type'],
+                    $draft['date'],
+                    $draft['time'],
+                    null,
+                    [
+                        'sql_state' => $exception->errorInfo[0] ?? null,
+                        'database_message' => $exception->getMessage(),
+                    ]
+                );
+
                 return redirect()
                     ->route('doctors.show', ['doctor' => $doctor->id, 'date' => $draft['date'], 'type' => $draft['type']])
                     ->withErrors(['time' => 'Slot no longer available'])
@@ -512,6 +562,16 @@ class AppointmentController extends Controller
             }
         }
 
+        $this->logSlotRejection(
+            'generated_slot_missing',
+            $doctor,
+            $bookingType,
+            $date,
+            $time,
+            $ignoreAppointmentId,
+            ['generated_slots_from_validation' => $slots]
+        );
+
         throw ValidationException::withMessages([
             'time' => 'Slot no longer available',
         ]);
@@ -533,14 +593,16 @@ class AppointmentController extends Controller
         $slotStart = CarbonImmutable::parse($date . ' ' . $normalizedTime, $timezone);
         $slotEnd = $slotStart->addMinutes($duration);
 
-        $appointmentOverlap = AppointmentSecurity::blockingAppointments(
+        $appointmentConflicts = AppointmentSecurity::blockingAppointments(
             $doctor->id,
             $date,
             $date,
             $ignoreAppointmentId
         )
             ->lockForUpdate()
-            ->get(['date', 'time'])
+            ->get(['id', 'date', 'time', 'status', 'type']);
+
+        $appointmentOverlap = $appointmentConflicts
             ->contains(function (Appointment $appointment) use ($date, $duration, $timezone, $slotStart, $slotEnd): bool {
                 $appointmentTime = AppointmentSecurity::normalizeTime((string) $appointment->time);
 
@@ -555,21 +617,41 @@ class AppointmentController extends Controller
             });
 
         if ($appointmentOverlap) {
+            $this->logSlotRejection(
+                'appointment_overlap',
+                $doctor,
+                $bookingType,
+                $date,
+                $time,
+                $ignoreAppointmentId,
+                ['locked_appointment_conflicts' => $appointmentConflicts->toArray()]
+            );
+
             throw ValidationException::withMessages([
                 'time' => 'Slot no longer available',
             ]);
         }
 
-        $blockedExists = BlockedTime::query()
+        $blockedConflicts = BlockedTime::query()
             ->where('doctor_id', $doctor->id)
             ->where('schedule_type', $scheduleType)
             ->where('is_active', true)
             ->where('starts_at', '<', $slotEnd)
             ->where('ends_at', '>', $slotStart)
             ->lockForUpdate()
-            ->exists();
+            ->get(['id', 'starts_at', 'ends_at', 'reason', 'source', 'appointment_id']);
 
-        if ($blockedExists) {
+        if ($blockedConflicts->isNotEmpty()) {
+            $this->logSlotRejection(
+                'blocked_time_overlap',
+                $doctor,
+                $bookingType,
+                $date,
+                $time,
+                $ignoreAppointmentId,
+                ['locked_blocked_conflicts' => $blockedConflicts->toArray()]
+            );
+
             throw ValidationException::withMessages([
                 'time' => 'Slot no longer available',
             ]);
@@ -589,6 +671,131 @@ class AppointmentController extends Controller
     private function scheduleTypeForBookingType(string $bookingType): string
     {
         return $bookingType === 'private' ? 'private_clinic' : 'hospital';
+    }
+
+    /**
+     * @param array<string, mixed> $extra
+     */
+    private function logSlotRejection(
+        string $reason,
+        Doctor $doctor,
+        string $bookingType,
+        string $date,
+        string $time,
+        ?int $ignoreAppointmentId = null,
+        array $extra = []
+    ): void {
+        try {
+            Log::warning('Booking slot rejected: Slot no longer available.', $extra + $this->slotDiagnostics(
+                $doctor,
+                $bookingType,
+                $date,
+                $time,
+                $ignoreAppointmentId
+            ) + [
+                'rejection_reason' => $reason,
+                'route' => request()->route()?->getName(),
+                'request_path' => request()->path(),
+            ]);
+        } catch (Throwable $exception) {
+            Log::warning('Booking slot rejected: diagnostics failed.', [
+                'rejection_reason' => $reason,
+                'doctor_id' => $doctor->id,
+                'booking_type' => $bookingType,
+                'date' => $date,
+                'time' => $time,
+                'normalized_time' => AppointmentSecurity::normalizeTime($time),
+                'schedule_type' => $this->scheduleTypeForBookingType($bookingType),
+                'diagnostic_error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function slotDiagnostics(
+        Doctor $doctor,
+        string $bookingType,
+        string $date,
+        string $time,
+        ?int $ignoreAppointmentId = null
+    ): array {
+        $normalizedTime = AppointmentSecurity::normalizeTime($time);
+        $scheduleType = $this->scheduleTypeForBookingType($bookingType);
+        $availability = DoctorAvailability::query()
+            ->where('doctor_id', $doctor->id)
+            ->where('schedule_type', $scheduleType)
+            ->where('is_active', true)
+            ->latest('id')
+            ->first();
+        $timezone = $availability?->timezone ?: config('app.timezone', 'Africa/Cairo');
+        $duration = (int) ($availability?->appointment_duration_minutes ?: 15);
+        $slotStart = CarbonImmutable::parse($date . ' ' . $normalizedTime, $timezone);
+        $slotEnd = $slotStart->addMinutes($duration);
+        $generatedSlots = app(SlotGenerationService::class)
+            ->generate($doctor->id, $scheduleType, $date, null, $ignoreAppointmentId);
+
+        $appointmentConflicts = AppointmentSecurity::blockingAppointments(
+            $doctor->id,
+            $date,
+            $date,
+            $ignoreAppointmentId
+        )
+            ->get(['id', 'date', 'time', 'status', 'type'])
+            ->map(function (Appointment $appointment) use ($date, $duration, $timezone, $slotStart, $slotEnd): array {
+                $appointmentTime = AppointmentSecurity::normalizeTime((string) $appointment->time);
+                $overlaps = true;
+
+                if ($appointmentTime !== '') {
+                    $appointmentStart = CarbonImmutable::parse($date . ' ' . $appointmentTime, $timezone);
+                    $appointmentEnd = $appointmentStart->addMinutes($duration);
+                    $overlaps = $slotStart->lt($appointmentEnd) && $slotEnd->gt($appointmentStart);
+                }
+
+                return [
+                    'id' => $appointment->id,
+                    'date' => (string) $appointment->date,
+                    'time' => (string) $appointment->time,
+                    'normalized_time' => $appointmentTime,
+                    'status' => $appointment->status,
+                    'type' => $appointment->type,
+                    'overlaps_selected_slot' => $overlaps,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $blockedConflicts = BlockedTime::query()
+            ->where('doctor_id', $doctor->id)
+            ->where('schedule_type', $scheduleType)
+            ->where('is_active', true)
+            ->where('starts_at', '<', $slotEnd)
+            ->where('ends_at', '>', $slotStart)
+            ->get(['id', 'starts_at', 'ends_at', 'reason', 'source', 'appointment_id'])
+            ->toArray();
+
+        return [
+            'doctor_id' => $doctor->id,
+            'booking_type' => $bookingType,
+            'date' => $date,
+            'time' => $time,
+            'normalized_time' => $normalizedTime,
+            'schedule_type' => $scheduleType,
+            'availability_id' => $availability?->id,
+            'availability_timezone' => $timezone,
+            'appointment_duration_minutes' => $duration,
+            'generated_slots' => collect($generatedSlots)
+                ->map(fn (array $slot) => [
+                    'date' => $slot['date'] ?? null,
+                    'time' => AppointmentSecurity::normalizeTime((string) ($slot['start_time'] ?? '')),
+                    'end_time' => AppointmentSecurity::normalizeTime((string) ($slot['end_time'] ?? '')),
+                ])
+                ->values()
+                ->all(),
+            'appointment_conflicts' => $appointmentConflicts,
+            'blocked_conflicts' => $blockedConflicts,
+        ];
     }
 
     private function isAppointmentSlotConflict(QueryException $exception): bool

@@ -56,7 +56,7 @@
         </div>
         <div class="text-end">
             <div><i class="bi bi-calendar-event"></i> {{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('l, M j, Y') }}</div>
-            <div><i class="bi bi-clock"></i> {{ $time }}</div>
+            <div><i class="bi bi-clock"></i> {{ $normalizedTime }}</div>
             <div><i class="bi bi-bookmark-check"></i> {{ __('ui.booking.choose_location') }}</div>
             <div><i class="bi bi-cash-stack"></i> {{ __('ui.booking.hospital_selected', ['amount' => number_format(\App\Support\PrivateClinicBookingSupport::calculateAmount($doctor, 'hospital'), 2)]) }}</div>
         </div>
@@ -81,7 +81,7 @@
     <form action="{{ route('appointments.review') }}" method="POST">
         @csrf
         <input type="hidden" name="doctor_id" value="{{ $doctor->id }}">
-        <input type="hidden" name="time" value="{{ $time }}">
+        <input type="hidden" name="time" value="{{ $normalizedTime }}">
         <input type="hidden" name="date" value="{{ $selectedDate }}">
 
         <div class="card-soft mb-3">

@@ -11,6 +11,7 @@ use App\Models\Patient;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class AppointmentBookingSlotValidationTest extends TestCase
@@ -52,6 +53,19 @@ class AppointmentBookingSlotValidationTest extends TestCase
         [$doctor] = $this->doctorWithAvailability();
         $patient = $this->patient();
 
+        $this->actingAs($patient, 'patient')
+            ->get(route('appointments.create', [
+            'doctor' => $doctor,
+            'time' => '09:00:00',
+            'date' => '2026-05-04',
+            'type' => 'hospital',
+            ]))
+            ->assertOk()
+            ->assertSee('name="doctor_id" value="'.$doctor->id.'"', false)
+            ->assertSee('name="time" value="09:00"', false)
+            ->assertSee('name="date" value="2026-05-04"', false)
+            ->assertSee('value="hospital" selected', false);
+
         $this->getJson(route('doctors.booked-slots', [
             'doctor' => $doctor,
             'date' => '2026-05-04',
@@ -64,8 +78,7 @@ class AppointmentBookingSlotValidationTest extends TestCase
                 'label' => 'Available',
             ]);
 
-        $this->actingAs($patient, 'patient')
-            ->post(route('appointments.review'), $this->reviewPayload($doctor, '09:00'))
+        $this->post(route('appointments.review'), $this->reviewPayload($doctor, '09:00'))
             ->assertRedirect(route('appointments.payment'));
 
         $booking = $this->post(route('appointments.confirm'), ['payment_method' => 'pay_at_hospital']);
@@ -133,10 +146,27 @@ class AppointmentBookingSlotValidationTest extends TestCase
     {
         [$doctor] = $this->doctorWithAvailability(scheduleEnd: '09:30');
         $patient = $this->patient();
+        Log::spy();
 
         $this->actingAs($patient, 'patient')
             ->post(route('appointments.review'), $this->reviewPayload($doctor, '10:00'))
             ->assertSessionHasErrors(['time' => 'Slot no longer available']);
+
+        Log::shouldHaveReceived('warning')
+            ->withArgs(function (string $message, array $context) use ($doctor): bool {
+                return $message === 'Booking slot rejected: Slot no longer available.'
+                    && $context['rejection_reason'] === 'generated_slot_missing'
+                    && $context['doctor_id'] === $doctor->id
+                    && $context['booking_type'] === 'hospital'
+                    && $context['date'] === '2026-05-04'
+                    && $context['time'] === '10:00'
+                    && $context['normalized_time'] === '10:00'
+                    && $context['schedule_type'] === 'hospital'
+                    && is_array($context['generated_slots'])
+                    && is_array($context['appointment_conflicts'])
+                    && is_array($context['blocked_conflicts']);
+            })
+            ->once();
 
         $this->assertDatabaseMissing('appointments', [
             'doctor_id' => $doctor->id,
