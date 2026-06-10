@@ -35,16 +35,33 @@ php artisan key:generate
 
 php artisan migrate
 
-5. Start server
+5. Start the local development server
 
-php artisan serve
+```bash
+php -S localhost:9000 -t public
+```
 
-## Production Demo Seeding
+## Railway Production Deployment
+
+Railway uses the repository's `nixpacks.toml` to run Nginx with PHP-FPM and
+serve Laravel from `/app/public`.
+
+Railway Start Command:
+
+Leave the Start Command field empty. Nixpacks will generate the Nginx +
+PHP-FPM start command. A Railway Start Command overrides `nixpacks.toml`, so
+remove any existing `php artisan serve` command.
 
 Railway pre-deploy command:
 
 ```bash
 php artisan migrate --force && php artisan db:seed --force && php artisan config:clear && php artisan cache:clear
+```
+
+Keep the Railway `APP_URL` variable set to:
+
+```text
+https://protective-emotion-production-e78f.up.railway.app
 ```
 
 The seeders are idempotent and update only records with stable demo identities. They do not truncate tables or require `migrate:fresh`.
