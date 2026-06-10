@@ -3,4 +3,6 @@ providers = ["php"]
 [variables]
 APP_URL = "https://protective-emotion-production-e78f.up.railway.app"
 NIXPACKS_PHP_ROOT_DIR = "/app/public"
-
+SESSION_DOMAIN = ""
+SESSION_SECURE_COOKIE = "true"
+SESSION_SAME_SITE = "lax"

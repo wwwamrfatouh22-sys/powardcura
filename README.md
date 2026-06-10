@@ -64,6 +64,17 @@ Keep the Railway `APP_URL` variable set to:
 https://protective-emotion-production-e78f.up.railway.app
 ```
 
+Use these Railway session variables:
+
+```dotenv
+SESSION_DOMAIN=
+SESSION_SECURE_COOKIE=true
+SESSION_SAME_SITE=lax
+```
+
+`SESSION_DOMAIN` must be empty so Laravel emits a host-only cookie. Do not set
+it to `.up.railway.app` or to the literal string `null`.
+
 The seeders are idempotent and update only records with stable demo identities. They do not truncate tables or require `migrate:fresh`.
 
 Verify a deployment:
