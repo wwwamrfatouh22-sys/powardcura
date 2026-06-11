@@ -64,6 +64,7 @@ class AppointmentBookingSlotValidationTest extends TestCase
             ->assertSee('name="doctor_id" value="'.$doctor->id.'"', false)
             ->assertSee('name="time" value="09:00"', false)
             ->assertSee('name="date" value="2026-05-04"', false)
+            ->assertSee('name="type" value="hospital"', false)
             ->assertSee('value="hospital" selected', false);
 
         $this->getJson(route('doctors.booked-slots', [
@@ -172,6 +173,87 @@ class AppointmentBookingSlotValidationTest extends TestCase
             'doctor_id' => $doctor->id,
             'date' => '2026-05-04',
             'time' => '10:00',
+        ]);
+    }
+
+    public function test_new_slot_selection_clears_old_draft_and_review_replaces_it(): void
+    {
+        [$doctor] = $this->doctorWithAvailability(scheduleEnd: '10:30', breakBetween: 0);
+        $patient = $this->patient();
+
+        $response = $this->actingAs($patient, 'patient')
+            ->withSession(['booking_draft' => $this->bookingDraft($doctor, '09:30')])
+            ->get(route('appointments.create', [
+                'doctor' => $doctor,
+                'time' => '09:00:00',
+                'date' => '2026-05-04',
+                'type' => 'hospital',
+            ]));
+
+        $response->assertOk()
+            ->assertSessionMissing('booking_draft')
+            ->assertSessionHas('booking_selection.doctor_id', $doctor->id)
+            ->assertSessionHas('booking_selection.type', 'hospital')
+            ->assertSessionHas('booking_selection.date', '2026-05-04')
+            ->assertSessionHas('booking_selection.time', '09:00');
+
+        $token = (string) session('booking_selection.token');
+
+        $this->post(route('appointments.review'), $this->reviewPayload($doctor, '09:00') + [
+            'booking_token' => $token,
+        ])
+            ->assertRedirect(route('appointments.payment'))
+            ->assertSessionMissing('booking_selection')
+            ->assertSessionHas('booking_draft.doctor_id', $doctor->id)
+            ->assertSessionHas('booking_draft.type', 'hospital')
+            ->assertSessionHas('booking_draft.date', '2026-05-04')
+            ->assertSessionHas('booking_draft.time', '09:00')
+            ->assertSessionHas('booking_draft.token', $token);
+    }
+
+    public function test_stale_payment_page_cannot_confirm_replaced_draft(): void
+    {
+        [$doctor] = $this->doctorWithAvailability(scheduleEnd: '10:30', breakBetween: 0);
+        $patient = $this->patient();
+        $this->actingAs($patient, 'patient');
+
+        $this->get(route('appointments.create', [
+            'doctor' => $doctor,
+            'time' => '09:00',
+            'date' => '2026-05-04',
+            'type' => 'hospital',
+        ]))->assertOk();
+        $oldToken = (string) session('booking_selection.token');
+
+        $this->post(route('appointments.review'), $this->reviewPayload($doctor, '09:00') + [
+            'booking_token' => $oldToken,
+        ])->assertRedirect(route('appointments.payment'));
+
+        $this->get(route('appointments.create', [
+            'doctor' => $doctor,
+            'time' => '09:30',
+            'date' => '2026-05-04',
+            'type' => 'hospital',
+        ]))->assertOk();
+        $newToken = (string) session('booking_selection.token');
+
+        $this->post(route('appointments.review'), $this->reviewPayload($doctor, '09:30') + [
+            'booking_token' => $newToken,
+        ])->assertRedirect(route('appointments.payment'));
+
+        $this->post(route('appointments.confirm'), [
+            'payment_method' => 'pay_at_hospital',
+            'booking_token' => $oldToken,
+        ])
+            ->assertRedirect()
+            ->assertSessionHasErrors(['booking'])
+            ->assertSessionMissing('booking_draft');
+
+        $this->assertDatabaseMissing('appointments', [
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctor->id,
+            'date' => '2026-05-04',
+            'time' => '09:30',
         ]);
     }
 

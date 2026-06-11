@@ -83,14 +83,16 @@
         <input type="hidden" name="doctor_id" value="{{ $doctor->id }}">
         <input type="hidden" name="time" value="{{ $normalizedTime }}">
         <input type="hidden" name="date" value="{{ $selectedDate }}">
+        <input type="hidden" name="type" value="{{ $selectedType }}">
+        <input type="hidden" name="booking_token" value="{{ $selection['token'] }}">
 
         <div class="card-soft mb-3">
             <div class="row g-3">
                 <div class="col-md-12">
                     <label class="form-label" for="type">{{ __('ui.booking.booking_location') }} *</label>
-                    <select name="type" id="type" class="form-select" required>
-                        <option value="hospital" {{ old('type', $selectedType) === 'hospital' ? 'selected' : '' }}>{{ __('ui.common.hospital') }}</option>
-                        <option value="private" {{ old('type', $selectedType) === 'private' ? 'selected' : '' }} {{ $hasPrivateClinic ? '' : 'disabled' }}>{{ __('ui.common.private_clinic') }}{{ $hasPrivateClinic ? '' : ' (' . __('ui.common.not_available') . ')' }}</option>
+                    <select id="type" class="form-select" disabled>
+                        <option value="hospital" {{ $selectedType === 'hospital' ? 'selected' : '' }}>{{ __('ui.common.hospital') }}</option>
+                        <option value="private" {{ $selectedType === 'private' ? 'selected' : '' }}>{{ __('ui.common.private_clinic') }}</option>
                     </select>
                     <div class="muted mt-2" id="bookingTypeNote">
                         {{ $hasPrivateClinic ? __('ui.booking.choose_location_note') : __('ui.booking.hospital_only_note') }}

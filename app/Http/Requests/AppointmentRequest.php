@@ -31,6 +31,7 @@ class AppointmentRequest extends FormRequest
             'time' => 'required',
             'date' => 'nullable|date',
             'type' => 'required|in:hospital,private',
+            'booking_token' => 'nullable|string|uuid',
         ];
     }
 }

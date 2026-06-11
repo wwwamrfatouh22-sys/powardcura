@@ -15,6 +15,7 @@ class ConfirmAppointmentPaymentRequest extends FormRequest
     {
         return [
             'payment_method' => ['required', 'in:fawry_card,fawry_wallet,instapay,pay_at_hospital'],
+            'booking_token' => ['nullable', 'string', 'uuid'],
         ];
     }
 

@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -34,7 +35,10 @@ class AppointmentController extends Controller
     {
         $doctor->loadMissing(['department', 'privateClinic']);
         $hasPrivateClinic = PrivateClinicBookingSupport::hasPrivateClinic($doctor);
-        $selectedDate = request('date', now()->toDateString());
+        $selectedDate = CarbonImmutable::parse(
+            request('date', now()->toDateString()),
+            config('app.timezone', 'Africa/Cairo')
+        )->toDateString();
         $selectedType = PrivateClinicBookingSupport::normalizeType(request('type'));
 
         if ($selectedType === 'private' && !$hasPrivateClinic) {
@@ -45,22 +49,33 @@ class AppointmentController extends Controller
         $normalizedTime = AppointmentSecurity::normalizeTime($time);
         $slotStillAvailable = true;
 
-        Log::debug('Booking form: selected slot values.', [
+        Session::forget(['booking_selection', 'booking_draft']);
+
+        $selection = [
+            'token' => (string) Str::uuid(),
             'doctor_id' => $doctor->id,
-            'posted_type' => request('type'),
-            'posted_date' => request('date'),
-            'posted_time' => $time,
-            'booking_type' => $selectedType,
+            'type' => $selectedType,
             'date' => $selectedDate,
-            'time' => $time,
-            'normalized_time' => $normalizedTime,
-            'schedule_type' => $this->scheduleTypeForBookingType($selectedType),
+            'time' => $normalizedTime,
+        ];
+
+        Log::info('Booking flow debug: new slot selected and stale draft cleared.', [
+            'doctor_id' => $doctor->id,
+            'selected_type' => $selection['type'],
+            'selected_date' => $selection['date'],
+            'selected_time' => $selection['time'],
+            'selection_token_present' => true,
+            'previous_draft_cleared' => true,
         ]);
 
         try {
             $this->ensureGeneratedSlotAvailable($doctor, $selectedType, $selectedDate, $normalizedTime);
         } catch (ValidationException) {
             $slotStillAvailable = false;
+        }
+
+        if ($slotStillAvailable) {
+            Session::put('booking_selection', $selection);
         }
 
         return view('appointments.create', compact(
@@ -71,7 +86,8 @@ class AppointmentController extends Controller
             'estimatedAmount',
             'selectedType',
             'hasPrivateClinic',
-            'slotStillAvailable'
+            'slotStillAvailable',
+            'selection'
         ));
     }
 
@@ -81,19 +97,31 @@ class AppointmentController extends Controller
         $doctor = Doctor::with('privateClinic')->findOrFail($data['doctor_id']);
         $type = PrivateClinicBookingSupport::normalizeType($data['type']);
         $normalizedTime = AppointmentSecurity::normalizeTime((string) $data['time']);
-        $selectedDate = $data['date'] ?? now()->toDateString();
+        $selectedDate = CarbonImmutable::parse(
+            $data['date'] ?? now()->toDateString(),
+            config('app.timezone', 'Africa/Cairo')
+        )->toDateString();
+        $selection = Session::get('booking_selection');
 
-        Log::debug('Booking review: received form values.', [
+        Log::info('Booking flow debug: review payload compared with selected slot.', [
             'doctor_id' => $doctor->id,
-            'posted_type' => $request->input('type'),
-            'posted_date' => $request->input('date'),
-            'posted_time' => $request->input('time'),
-            'booking_type' => $type,
-            'date' => $selectedDate,
-            'time' => $data['time'],
-            'normalized_time' => $normalizedTime,
-            'schedule_type' => $this->scheduleTypeForBookingType($type),
+            'selected_type' => $selection['type'] ?? null,
+            'selected_date' => $selection['date'] ?? null,
+            'selected_time' => $selection['time'] ?? null,
+            'posted_type' => $type,
+            'posted_date' => $selectedDate,
+            'posted_time' => $normalizedTime,
+            'selection_token_matches' => isset($selection['token'])
+                && hash_equals((string) $selection['token'], (string) ($data['booking_token'] ?? '')),
         ]);
+
+        if (! $this->selectionMatchesReview($selection, $data['booking_token'] ?? null, $doctor->id, $type, $selectedDate, $normalizedTime)) {
+            Session::forget(['booking_selection', 'booking_draft']);
+
+            return redirect()
+                ->route('doctors.show', ['doctor' => $doctor->id, 'date' => $selectedDate, 'type' => $type])
+                ->withErrors(['time' => 'Your selected slot changed or expired. Please select it again.']);
+        }
 
         if ($type === 'private' && !PrivateClinicBookingSupport::hasPrivateClinic($doctor)) {
             return back()
@@ -126,17 +154,24 @@ class AppointmentController extends Controller
             'time' => $normalizedTime,
             'date' => $selectedDate,
             'type' => $type,
+            'token' => (string) ($selection['token'] ?? Str::uuid()),
         ];
 
         $draft['payment_amount'] = PrivateClinicBookingSupport::calculateAmount($doctor, $draft['type']);
         $draft += PrivateClinicBookingSupport::clinicSnapshot($doctor, $draft['type']);
 
+        Session::forget('booking_draft');
         Session::put('booking_draft', $draft);
+        Session::forget('booking_selection');
 
-        Log::debug('Booking review: session draft stored.', $this->bookingLogContext($draft, [
-            'normalized_time' => $normalizedTime,
-            'schedule_type' => $this->scheduleTypeForBookingType($type),
-        ]));
+        Log::info('Booking flow debug: current draft replaced from reviewed selection.', [
+            'doctor_id' => $draft['doctor_id'],
+            'draft_type' => $draft['type'],
+            'draft_date' => $draft['date'],
+            'draft_time' => $draft['time'],
+            'draft_token_present' => true,
+            'old_draft_replaced' => true,
+        ]);
 
         return redirect()->route('appointments.payment');
     }
@@ -152,6 +187,14 @@ class AppointmentController extends Controller
         }
 
         $doctor = Doctor::with(['department', 'privateClinic'])->findOrFail($draft['doctor_id']);
+
+        Log::info('Booking flow debug: payment page loaded current draft.', [
+            'doctor_id' => $draft['doctor_id'],
+            'draft_type' => $draft['type'],
+            'draft_date' => $draft['date'],
+            'draft_time' => $draft['time'],
+            'draft_token_present' => isset($draft['token']),
+        ]);
 
         return view('appointments.payment', [
             'draft' => $draft,
@@ -169,13 +212,26 @@ class AppointmentController extends Controller
             ]);
         }
 
+        $draft = $this->normalizeBookingDraft($draft);
+
+        if (! $this->confirmTokenMatchesDraft($request->validated('booking_token'), $draft)) {
+            Session::forget('booking_draft');
+
+            return redirect()->to($this->bookingStartUrl())->withErrors([
+                'booking' => 'This payment page is stale. Please select the appointment slot again.',
+            ]);
+        }
+
+        Session::put('booking_draft', $draft);
         $doctor = Doctor::with('privateClinic')->findOrFail($draft['doctor_id']);
 
-        Log::debug('Booking confirm: session draft loaded.', $this->bookingLogContext($draft, [
-            'posted_payment_method' => $request->input('payment_method'),
-            'normalized_time' => AppointmentSecurity::normalizeTime((string) ($draft['time'] ?? '')),
-            'schedule_type' => $this->scheduleTypeForBookingType((string) ($draft['type'] ?? '')),
-        ]));
+        Log::info('Booking flow debug: confirm uses normalized current draft.', [
+            'doctor_id' => $draft['doctor_id'],
+            'draft_type' => $draft['type'],
+            'draft_date' => $draft['date'],
+            'draft_time' => $draft['time'],
+            'draft_token_matches' => $this->confirmTokenMatchesDraft($request->validated('booking_token'), $draft),
+        ]);
 
         if ($draft['type'] === 'private' && !PrivateClinicBookingSupport::hasPrivateClinic($doctor)) {
             Session::forget('booking_draft');
@@ -671,6 +727,66 @@ class AppointmentController extends Controller
     private function scheduleTypeForBookingType(string $bookingType): string
     {
         return $bookingType === 'private' ? 'private_clinic' : 'hospital';
+    }
+
+    /**
+     * @param array<string, mixed>|null $selection
+     */
+    private function selectionMatchesReview(
+        ?array $selection,
+        ?string $submittedToken,
+        int $doctorId,
+        string $type,
+        string $date,
+        string $time
+    ): bool {
+        if ($selection === null) {
+            return $submittedToken === null;
+        }
+
+        $tokenMatches = $submittedToken === null
+            || (isset($selection['token']) && hash_equals((string) $selection['token'], $submittedToken));
+
+        return $tokenMatches
+            && (int) ($selection['doctor_id'] ?? 0) === $doctorId
+            && (string) ($selection['type'] ?? '') === $type
+            && (string) ($selection['date'] ?? '') === $date
+            && (string) ($selection['time'] ?? '') === $time;
+    }
+
+    /**
+     * @param array<string, mixed> $draft
+     * @return array<string, mixed>
+     */
+    private function normalizeBookingDraft(array $draft): array
+    {
+        $draft['doctor_id'] = (int) ($draft['doctor_id'] ?? 0);
+        $draft['type'] = PrivateClinicBookingSupport::normalizeType($draft['type'] ?? null);
+        $draft['date'] = CarbonImmutable::parse(
+            $draft['date'] ?? now()->toDateString(),
+            config('app.timezone', 'Africa/Cairo')
+        )->toDateString();
+        $draft['time'] = AppointmentSecurity::normalizeTime((string) ($draft['time'] ?? ''));
+
+        return $draft;
+    }
+
+    /**
+     * @param array<string, mixed> $draft
+     */
+    private function confirmTokenMatchesDraft(?string $submittedToken, array $draft): bool
+    {
+        $draftToken = $draft['token'] ?? null;
+
+        if ($submittedToken === null) {
+            return true;
+        }
+
+        if ($draftToken === null) {
+            return false;
+        }
+
+        return hash_equals((string) $draftToken, $submittedToken);
     }
 
     /**

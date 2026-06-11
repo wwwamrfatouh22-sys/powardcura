@@ -251,6 +251,7 @@
 
         <form action="{{ route('appointments.confirm') }}" method="POST" class="pay-card" id="paymentForm">
             @csrf
+            <input type="hidden" name="booking_token" value="{{ $draft['token'] ?? '' }}">
 
             <h5 class="fw-bold mb-3">{{ __('ui.booking.select_payment') }}</h5>
 
