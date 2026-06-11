@@ -345,7 +345,7 @@
 </head>
 <body>
 <div class="page-shell">
-    <a href="{{ route('specialties.doctors', $doctor->department_id) }}" class="back-link"><i class="bi bi-arrow-left"></i> Back To Specialist List</a>
+    <a href="{{ route('specialties.doctors', $doctor->department_id, false) }}" class="back-link"><i class="bi bi-arrow-left"></i> Back To Specialist List</a>
 
     @if ($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
@@ -355,10 +355,10 @@
         <div class="profile-grid">
             <div>
                 <img
-                    src="{{ $doctor->image ? asset('images/' . $doctor->image) : asset('images/logo_Image.png') }}"
+                    src="{{ $doctor->image ? '/images/' . ltrim($doctor->image, '/') : '/images/logo_Image.png' }}"
                     alt="{{ $doctor->name }}"
                     class="doctor-image"
-                    onerror="this.onerror=null;this.src='{{ asset('images/logo_Image.png') }}';"
+                    onerror="this.onerror=null;this.src='/images/logo_Image.png';"
                 >
             </div>
             <div>
@@ -403,6 +403,14 @@
     </section>
 </div>
 
+@php
+    $bookingRoutePattern = route('appointments.create', [
+        'doctor' => $doctor->id,
+        'time' => '__TIME__',
+    ], false);
+    $bookedSlotsEndpoint = route('doctors.booked-slots', ['doctor' => $doctor->id], false);
+@endphp
+
 <script>
     const dateList = document.getElementById('dateList');
     const timeGrid = document.getElementById('timeGrid');
@@ -413,8 +421,8 @@
 
     let slotDays = @json($slotDays);
     const currentLocale = @json(app()->isLocale('ar') ? 'ar-EG' : 'en-US');
-    const bookingRoutePattern = @json(route('appointments.create', ['doctor' => $doctor->id, 'time' => '__TIME__']));
-    const bookedSlotsEndpoint = @json(route('doctors.booked-slots', ['doctor' => $doctor->id]));
+    const bookingRoutePattern = @json($bookingRoutePattern);
+    const bookedSlotsEndpoint = @json($bookedSlotsEndpoint);
     let selectedDate = @json($selectedDate ?? now()->toDateString());
     let selectedType = @json($selectedType ?? 'hospital');
     let selectedSlot = null;

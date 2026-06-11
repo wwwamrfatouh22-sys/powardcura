@@ -65,6 +65,7 @@ class AppointmentBookingSlotValidationTest extends TestCase
             ->assertSee('name="time" value="09:00"', false)
             ->assertSee('name="date" value="2026-05-04"', false)
             ->assertSee('name="type" value="hospital"', false)
+            ->assertSee('action="/appointments/review" method="POST"', false)
             ->assertSee('value="hospital" selected', false);
 
         $this->getJson(route('doctors.booked-slots', [

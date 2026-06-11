@@ -42,12 +42,12 @@
             <h1>{{ __('ui.booking.details_title') }}</h1>
             <p>{{ __('ui.booking.details_step') }}</p>
         </div>
-        <a href="{{ route('doctors.show', ['doctor' => $doctor->id, 'date' => $selectedDate, 'type' => $selectedType]) }}" class="btn btn-outline-secondary">{{ __('ui.common.back') }}</a>
+        <a href="{{ route('doctors.show', ['doctor' => $doctor->id, 'date' => $selectedDate, 'type' => $selectedType], false) }}" class="btn btn-outline-secondary">{{ __('ui.common.back') }}</a>
     </div>
 
     <div class="doctor-summary">
         <div class="doctor-left">
-            <img src="{{ $doctor->image ? asset('images/' . $doctor->image) : asset('images/logo_Image.png') }}" class="doctor-avatar" alt="{{ $doctor->name }}" onerror="this.onerror=null;this.src='{{ asset('images/logo_Image.png') }}';">
+            <img src="{{ $doctor->image ? '/images/' . ltrim($doctor->image, '/') : '/images/logo_Image.png' }}" class="doctor-avatar" alt="{{ $doctor->name }}" onerror="this.onerror=null;this.src='/images/logo_Image.png';">
             <div>
                 <strong>{{ $doctor->name }}</strong>
                 <div class="muted">{{ $doctor->specialization }}</div>
@@ -78,7 +78,7 @@
         <div class="slot-ok"><i class="bi bi-check-circle"></i> Selected slot is available. Confirm your details to continue.</div>
     @endif
 
-    <form action="{{ route('appointments.review') }}" method="POST">
+    <form action="{{ route('appointments.review', [], false) }}" method="POST">
         @csrf
         <input type="hidden" name="doctor_id" value="{{ $doctor->id }}">
         <input type="hidden" name="time" value="{{ $normalizedTime }}">

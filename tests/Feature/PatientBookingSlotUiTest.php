@@ -75,6 +75,36 @@ class PatientBookingSlotUiTest extends TestCase
             ->assertJsonPath('slots.1.available', true);
     }
 
+    public function test_doctor_page_uses_same_origin_booking_urls_and_images(): void
+    {
+        $doctor = $this->doctorWithSchedule();
+
+        $response = $this->get(route('doctors.show', [
+            'doctor' => $doctor,
+            'date' => '2026-06-08',
+            'type' => 'hospital',
+        ]));
+
+        $response->assertOk()
+            ->assertSee(
+                'const bookedSlotsEndpoint = '.json_encode(
+                    route('doctors.booked-slots', $doctor, false)
+                ).';',
+                false
+            )
+            ->assertSee(
+                'const bookingRoutePattern = '.json_encode(
+                    route('appointments.create', [
+                        'doctor' => $doctor,
+                        'time' => '__TIME__',
+                    ], false)
+                ).';',
+                false
+            )
+            ->assertSee('src="/images/doctor.jpg"', false)
+            ->assertDontSee('http://protective-emotion-production-e78f.up.railway.app', false);
+    }
+
     public function test_canceled_appointment_does_not_block_visible_slot(): void
     {
         $doctor = $this->doctorWithSchedule();

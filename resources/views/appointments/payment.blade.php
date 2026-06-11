@@ -218,7 +218,7 @@
             <h1>{{ __('ui.booking.payment_title') }}</h1>
             <p>Choose how you want to pay for this appointment.</p>
         </div>
-        <a href="{{ route('doctors.show', ['doctor' => $doctor->id, 'date' => $draft['date'], 'type' => $draft['type']]) }}" class="btn btn-outline-secondary">{{ __('ui.common.back') }}</a>
+        <a href="{{ route('doctors.show', ['doctor' => $doctor->id, 'date' => $draft['date'], 'type' => $draft['type']], false) }}" class="btn btn-outline-secondary">{{ __('ui.common.back') }}</a>
     </div>
 
     @if ($errors->any())
@@ -249,7 +249,7 @@
             </div>
         </aside>
 
-        <form action="{{ route('appointments.confirm') }}" method="POST" class="pay-card" id="paymentForm">
+        <form action="{{ route('appointments.confirm', [], false) }}" method="POST" class="pay-card" id="paymentForm">
             @csrf
             <input type="hidden" name="booking_token" value="{{ $draft['token'] ?? '' }}">
 
