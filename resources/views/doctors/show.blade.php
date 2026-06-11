@@ -403,14 +403,6 @@
     </section>
 </div>
 
-@php
-    $bookingRoutePattern = route('appointments.create', [
-        'doctor' => $doctor->id,
-        'time' => '__TIME__',
-    ], false);
-    $bookedSlotsEndpoint = route('doctors.booked-slots', ['doctor' => $doctor->id], false);
-@endphp
-
 <script>
     const dateList = document.getElementById('dateList');
     const timeGrid = document.getElementById('timeGrid');
@@ -421,8 +413,7 @@
 
     let slotDays = @json($slotDays);
     const currentLocale = @json(app()->isLocale('ar') ? 'ar-EG' : 'en-US');
-    const bookingRoutePattern = @json($bookingRoutePattern);
-    const bookedSlotsEndpoint = @json($bookedSlotsEndpoint);
+    const doctorId = @json((int) $doctor->id);
     let selectedDate = @json($selectedDate ?? now()->toDateString());
     let selectedType = @json($selectedType ?? 'hospital');
     let selectedSlot = null;
@@ -490,7 +481,10 @@
     async function loadSlotsForDate(date = selectedDate) {
         setStatus('Loading available slots...', 'loading', 'bi-arrow-repeat');
         try {
-            const response = await fetch(`${bookedSlotsEndpoint}?date=${encodeURIComponent(date)}&type=${encodeURIComponent(selectedType)}`, {
+            const fetchUrl = `/doctors/${doctorId}/booked-slots?date=${encodeURIComponent(date)}&type=${encodeURIComponent(selectedType)}`;
+            console.debug('Booking slots fetch URL:', fetchUrl);
+
+            const response = await fetch(fetchUrl, {
                 headers: { 'Accept': 'application/json' },
             });
             if (!response.ok) throw new Error('Failed to load slots.');
@@ -520,6 +514,13 @@
     }
 
     async function verifyAndSelectSlot(time) {
+        console.debug('Verifying selected booking slot:', {
+            doctorId,
+            type: selectedType,
+            date: selectedDate,
+            time,
+        });
+
         const day = await loadSlotsForDate(selectedDate);
         const freshSlot = day ? day.slots.find(slot => slot.time === time) : null;
 
@@ -547,8 +548,7 @@
             return;
         }
 
-        const base = bookingRoutePattern.replace('__TIME__', encodeURIComponent(selectedSlot));
-        continueBooking.href = `${base}?date=${encodeURIComponent(selectedDate)}&type=${encodeURIComponent(selectedType)}`;
+        continueBooking.href = `/appointment/${doctorId}/${encodeURIComponent(selectedSlot)}?date=${encodeURIComponent(selectedDate)}&type=${encodeURIComponent(selectedType)}`;
         continueBooking.classList.remove('disabled');
         selectedSummary.textContent = `${selectedDate} at ${selectedSlot}`;
     }

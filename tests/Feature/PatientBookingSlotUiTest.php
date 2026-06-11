@@ -86,23 +86,12 @@ class PatientBookingSlotUiTest extends TestCase
         ]));
 
         $response->assertOk()
-            ->assertSee(
-                'const bookedSlotsEndpoint = '.json_encode(
-                    route('doctors.booked-slots', $doctor, false)
-                ).';',
-                false
-            )
-            ->assertSee(
-                'const bookingRoutePattern = '.json_encode(
-                    route('appointments.create', [
-                        'doctor' => $doctor,
-                        'time' => '__TIME__',
-                    ], false)
-                ).';',
-                false
-            )
+            ->assertSee('const doctorId = '.$doctor->id.';', false)
+            ->assertSee('const fetchUrl = `/doctors/${doctorId}/booked-slots?', false)
+            ->assertSee('continueBooking.href = `/appointment/${doctorId}/${encodeURIComponent(selectedSlot)}?', false)
             ->assertSee('src="/images/doctor.jpg"', false)
-            ->assertDontSee('http://protective-emotion-production-e78f.up.railway.app', false);
+            ->assertDontSee('window.location.origin', false)
+            ->assertDontSee('http://', false);
     }
 
     public function test_canceled_appointment_does_not_block_visible_slot(): void
