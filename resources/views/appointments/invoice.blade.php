@@ -37,10 +37,18 @@
         }
 
         .invoice-card {
-            width: min(448px, 100%);
+            width: 100%;
             background: #fff;
             border-radius: 18px;
             padding: 48px 32px 24px;
+        }
+
+        .invoice-stack {
+            width: min(448px, 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
         }
 
         .feedback-card {
@@ -248,7 +256,13 @@
             font-size: 17px;
         }
 
+        .invoice-actions {
+            display: grid;
+            gap: 10px;
+        }
+
         .print-btn,
+        .home-btn,
         .rating-submit {
             width: 100%;
             min-height: 52px;
@@ -259,6 +273,30 @@
             font-size: 17px;
             font-weight: 800;
             cursor: pointer;
+        }
+
+        .home-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #fff;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            text-decoration: none;
+        }
+
+        .home-btn:hover {
+            background: #eef5ff;
+            color: var(--primary);
+        }
+
+        .top-home-btn {
+            width: auto;
+            min-height: 44px;
+            padding: 0 16px;
+            background: #fff;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, .08);
         }
 
         .rating-card {
@@ -354,10 +392,23 @@
             }
 
             .invoice-card,
+            .invoice-stack,
             .feedback-card,
             .doctor-rating-card {
                 width: 100%;
                 border-radius: 0;
+            }
+
+            .invoice-stack {
+                gap: 0;
+            }
+
+            .top-home-btn {
+                width: 100%;
+                border-radius: 0;
+                justify-content: flex-start;
+                box-shadow: none;
+                border-width: 0 0 1px;
             }
         }
 
@@ -373,6 +424,8 @@
             .feedback-card,
             .doctor-rating-card,
             .print-btn,
+            .home-btn,
+            .top-home-btn,
             .alert { display: none !important; }
         }
     </style>
@@ -419,7 +472,13 @@
 @endphp
 
 <main class="page">
-    <section class="invoice-card">
+    <div class="invoice-stack">
+        <a class="home-btn top-home-btn" href="{{ url('/') }}">
+            <i class="bi bi-house-door-fill"></i>
+            <span>Back to Home</span>
+        </a>
+
+        <section class="invoice-card">
         @if(session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif
@@ -489,8 +548,11 @@
             <p>Expected time : {{ $expectedTimeLabel }}</p>
         </div>
 
-        <button type="button" class="print-btn" onclick="window.print()">Print</button>
-    </section>
+        <div class="invoice-actions">
+            <button type="button" class="print-btn" onclick="window.print()">Print</button>
+        </div>
+        </section>
+    </div>
 
     <aside class="feedback-card" id="siteRatingSection">
         <h2>Rate Your Experience</h2>

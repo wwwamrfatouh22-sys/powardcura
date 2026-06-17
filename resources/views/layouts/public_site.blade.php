@@ -352,11 +352,23 @@
             min-height: 180px;
         }
 
-        .footer-map iframe {
+        .footer-map-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             width: 100%;
-            height: 100%;
             min-height: 180px;
-            border: 0;
+            background: var(--primary);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .footer-map-link:hover {
+            background: var(--primary-dark);
+            color: #fff;
         }
 
         @media (max-width: 991.98px) {
@@ -480,6 +492,10 @@
     @yield('content')
 </main>
 
+@php
+    $hospitalLocationUrl = 'https://maps.app.goo.gl/uKMRqnYTmkXkZNkbA';
+@endphp
+
 <footer class="site-footer">
     <div class="container-xl-custom">
         <div class="footer-grid">
@@ -494,13 +510,18 @@
             <div>
                 <div class="footer-title">{{ __('ui.home.access_map') }}</div>
                 <div class="footer-map" id="location-section">
-                    <iframe src="https://www.google.com/maps?q=New%20Beni%20Suef%20City&z=13&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    <a class="footer-map-link" href="{{ $hospitalLocationUrl }}" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <span>{{ __('ui.home.access_map') }}</span>
+                    </a>
                 </div>
             </div>
             <div>
                 <div class="footer-title">{{ __('ui.home.contact_information') }}</div>
                 <div class="footer-contact">
-                    <div>{{ __('ui.home.city') }}</div>
+                    <a href="{{ $hospitalLocationUrl }}" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-geo-alt-fill"></i> {{ __('ui.home.city') }}
+                    </a>
                     <a href="tel:+2001000004000"><i class="bi bi-telephone-fill"></i> +20 01000004000</a>
                     <a href="tel:0822222888"><i class="bi bi-telephone-fill"></i> 0822222888</a>
                     <a href="mailto:nuh90@gmail.com"><i class="bi bi-envelope-fill"></i> Mail: nuh90@gmail.com</a>

@@ -7,8 +7,12 @@
     <title>{{ __('ui.brand.name') }}</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link href="{{ app()->isLocale('ar') ? 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css' : 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' }}" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link
+        href="{{ app()->isLocale('ar') ? 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css' : 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' }}"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@300;400;500;700;800&display=swap"
+        rel="stylesheet">
 
     <style>
     :root {
@@ -35,11 +39,13 @@
     body {
         margin: 0;
         padding: 0;
+
         font-family: {{ app()->isLocale('ar') ? "'Cairo', Arial, Helvetica, sans-serif" : "'Inter', Arial, Helvetica, sans-serif" }};
         color: var(--text);
         overflow-x: hidden;
         background: linear-gradient(90deg, #8ecbff 0%, #cfeaff 18%, #edf6ff 38%, #f8f9fb 62%, #f4f4f5 100%);
         background-attachment: fixed;
+
         text-align: {{ app()->isLocale('ar') ? 'right' : 'left' }};
     }
 
@@ -139,13 +145,13 @@
     }
 
     .nav-link.active,
-    .show > .nav-link {
+    .show>.nav-link {
         background: rgba(255, 255, 255, 0.12);
         color: #fff !important;
     }
 
     .nav-link.active::after,
-    .show > .nav-link::after {
+    .show>.nav-link::after {
         transform: scaleX(1);
     }
 
@@ -1267,6 +1273,25 @@
         display: block;
     }
 
+    .footer-map-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 44px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .footer-map-link:hover {
+        background: var(--primary-dark);
+        color: #fff;
+    }
+
     .reveal {
         opacity: 0;
         transform: translateY(32px);
@@ -1577,6 +1602,7 @@
 
         .nav-link {
             width: 100%;
+
             text-align: {{ app()->isLocale('ar') ? 'right' : 'left' }};
         }
 
@@ -1748,43 +1774,52 @@
                 <img src="{{ asset('images/nuh-logo.png') }}" alt="Logo">
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#mainNavbar">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="nav-shell">
                 <div class="collapse navbar-collapse justify-content-center" id="mainNavbar">
                     <ul class="navbar-nav align-items-lg-center">
-                        <li class="nav-item"><a class="nav-link" href="#booking-section">{{ __('ui.nav.about') }}</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#booking-section">{{ __('ui.nav.about') }}</a>
+                        </li>
                         <li class="nav-item">
                             <a href="#departments-section" class="nav-link active">{{ __('ui.nav.departments') }}</a>
                         </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ route('radiology_results.index') }}">{{ __('ui.nav.radiology') }}</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ route('laboratory_results.index') }}">{{ __('ui.nav.laboratory') }}</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#departments-section">{{ __('ui.nav.clinics') }}</a></li>
+                        <li class="nav-item"><a class="nav-link"
+                                href="{{ route('radiology_results.index') }}">{{ __('ui.nav.radiology') }}</a></li>
+                        <li class="nav-item"><a class="nav-link"
+                                href="{{ route('laboratory_results.index') }}">{{ __('ui.nav.laboratory') }}</a></li>
+                        <li class="nav-item"><a class="nav-link"
+                                href="#departments-section">{{ __('ui.nav.clinics') }}</a></li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="jobsDropdown" role="button"
                                 data-bs-toggle="dropdown">{{ __('ui.nav.jobs_training') }}</a>
                             <ul class="dropdown-menu shadow">
-                                <li><a class="dropdown-item" href="{{ route('staff.module.jobs') }}">{{ __('ui.nav.job_opportunities') }}</a>
+                                <li><a class="dropdown-item"
+                                        href="{{ route('staff.module.jobs') }}">{{ __('ui.nav.job_opportunities') }}</a>
                                 </li>
-                                <li><a class="dropdown-item" href="{{ route('staff.module.training') }}">{{ __('ui.nav.training_programs') }}</a></li>
+                                <li><a class="dropdown-item"
+                                        href="{{ route('staff.module.training') }}">{{ __('ui.nav.training_programs') }}</a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="contactDropdown" role="button"
                                 data-bs-toggle="dropdown">{{ __('ui.nav.contact') }}</a>
                             <ul class="dropdown-menu shadow">
-                                <li><a class="dropdown-item" href="#location-section">{{ __('ui.nav.landline') }}</a></li>
-                                <li><a class="dropdown-item" href="{{ route('complaints.create') }}">{{ __('ui.nav.complaints') }}</a></li>
+                                <li><a class="dropdown-item" href="#location-section">{{ __('ui.nav.landline') }}</a>
+                                </li>
+                                <li><a class="dropdown-item"
+                                        href="{{ route('complaints.create') }}">{{ __('ui.nav.complaints') }}</a></li>
                             </ul>
                         </li>
                     </ul>
                 </div>
 
                 <div class="d-flex align-items-center auth-links">
-                    <a href="{{ route('locale.switch', app()->isLocale('ar') ? 'en' : 'ar') }}" class="lang-link">{{ __('ui.language.switch_to') }}</a>
+                    <a href="{{ route('locale.switch', app()->isLocale('ar') ? 'en' : 'ar') }}"
+                        class="lang-link">{{ __('ui.language.switch_to') }}</a>
 
                     @guest('patient')
                     <a href="{{ route('register') }}" class="auth-btn auth-btn-signup">{{ __('ui.nav.signup') }}</a>
@@ -1797,13 +1832,14 @@
                             <i class="bi bi-person-fill"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ route('profile.show') }}">{{ __('ui.common.my_profile') }}</a></li>
-                        <li>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button class="dropdown-item">{{ __('ui.common.logout') }}</button>
-                            </form>
-                        </li>
+                            <li><a class="dropdown-item"
+                                    href="{{ route('profile.show') }}">{{ __('ui.common.my_profile') }}</a></li>
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button class="dropdown-item">{{ __('ui.common.logout') }}</button>
+                                </form>
+                            </li>
                         </ul>
                     </div>
                     @endauth
@@ -1970,31 +2006,37 @@
                                 ];
                                 $departmentName = trim((string) $department->name_en);
                                 $departmentImage = $departmentImages[$departmentName]
-                                    ?? match (true) {
-                                        str_contains($departmentName, 'Card') => $departmentImages['Cardiology'],
-                                        str_contains($departmentName, 'Ped') || str_contains($departmentName, 'Child') => $departmentImages['Pediatrics'],
-                                        str_contains($departmentName, 'Dent') => $departmentImages['Dentistry'],
-                                        str_contains($departmentName, 'Ortho') || str_contains($departmentName, 'Bone') => $departmentImages['Orthopedics'],
-                                        str_contains($departmentName, 'Neuro') => $departmentImages['Neurology'],
-                                        str_contains($departmentName, 'Derm') => $departmentImages['Dermatology'],
-                                        str_contains($departmentName, 'Eye') || str_contains($departmentName, 'Ophth') => $departmentImages['Ophthalmology'],
-                                        str_contains($departmentName, 'ENT') => $departmentImages['ENT'],
-                                        str_contains($departmentName, 'Radio') => $departmentImages['Radiology'],
-                                        str_contains($departmentName, 'Onco') => $departmentImages['Oncology'],
-                                        str_contains($departmentName, 'Uro') => $departmentImages['Urology'],
-                                        str_contains($departmentName, 'Gyn') || str_contains($departmentName, 'Obs') => $departmentImages['Gynecology'],
-                                        str_contains($departmentName, 'Psych') => $departmentImages['Psychiatry'],
-                                        str_contains($departmentName, 'Pulm') || str_contains($departmentName, 'Chest') => $departmentImages['Pulmonology'],
-                                        str_contains($departmentName, 'Gastro') => $departmentImages['Gastroenterology'],
-                                        str_contains($departmentName, 'Neph') || str_contains($departmentName, 'Kidney') => $departmentImages['Nephrology'],
-                                        str_contains($departmentName, 'Surg') => $departmentImages['General Surgery'],
-                                        str_contains($departmentName, 'Emerg') => $departmentImages['Emergency'],
-                                        default => 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1200&auto=format&fit=crop',
-                                    };
+                                ?? match (true) {
+                                str_contains($departmentName, 'Card') => $departmentImages['Cardiology'],
+                                str_contains($departmentName, 'Ped') || str_contains($departmentName, 'Child') =>
+                                $departmentImages['Pediatrics'],
+                                str_contains($departmentName, 'Dent') => $departmentImages['Dentistry'],
+                                str_contains($departmentName, 'Ortho') || str_contains($departmentName, 'Bone') =>
+                                $departmentImages['Orthopedics'],
+                                str_contains($departmentName, 'Neuro') => $departmentImages['Neurology'],
+                                str_contains($departmentName, 'Derm') => $departmentImages['Dermatology'],
+                                str_contains($departmentName, 'Eye') || str_contains($departmentName, 'Ophth') =>
+                                $departmentImages['Ophthalmology'],
+                                str_contains($departmentName, 'ENT') => $departmentImages['ENT'],
+                                str_contains($departmentName, 'Radio') => $departmentImages['Radiology'],
+                                str_contains($departmentName, 'Onco') => $departmentImages['Oncology'],
+                                str_contains($departmentName, 'Uro') => $departmentImages['Urology'],
+                                str_contains($departmentName, 'Gyn') || str_contains($departmentName, 'Obs') =>
+                                $departmentImages['Gynecology'],
+                                str_contains($departmentName, 'Psych') => $departmentImages['Psychiatry'],
+                                str_contains($departmentName, 'Pulm') || str_contains($departmentName, 'Chest') =>
+                                $departmentImages['Pulmonology'],
+                                str_contains($departmentName, 'Gastro') => $departmentImages['Gastroenterology'],
+                                str_contains($departmentName, 'Neph') || str_contains($departmentName, 'Kidney') =>
+                                $departmentImages['Nephrology'],
+                                str_contains($departmentName, 'Surg') => $departmentImages['General Surgery'],
+                                str_contains($departmentName, 'Emerg') => $departmentImages['Emergency'],
+                                default =>
+                                'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1200&auto=format&fit=crop',
+                                };
                                 @endphp
 
-                                <img src="{{ $departmentImage }}"
-                                    alt="{{ $department->name_en }}">
+                                <img src="{{ $departmentImage }}" alt="{{ $department->name_en }}">
 
                                 <div class="department-overlay">
                                     <span>{{ __('ui.home.specialized_care') }}</span>
@@ -2150,6 +2192,11 @@
         </div>
     </div>
 
+    @php
+        $homeLocationUrl = 'https://maps.app.goo.gl/uKMRqnYTmkXkZNkbA';
+        $homeLocationEmbedUrl = 'https://www.google.com/maps?q=29.013572,31.150207&z=16&output=embed';
+    @endphp
+
     <footer class="site-footer">
         <div class="container-xl-custom">
             <div class="footer-grid">
@@ -2164,14 +2211,19 @@
                 <div>
                     <div class="footer-title">{{ __('ui.home.access_map') }}</div>
                     <div class="footer-map" id="location-section">
-                        <iframe src="https://www.google.com/maps?q=New%20Beni%20Suef%20City&z=13&output=embed"
-                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        <iframe src="{{ $homeLocationEmbedUrl }}" title="{{ __('ui.home.access_map') }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        <a class="footer-map-link" href="{{ $homeLocationUrl }}" target="_blank" rel="noopener noreferrer">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <span>{{ __('ui.home.access_map') }}</span>
+                        </a>
                     </div>
                 </div>
                 <div>
                     <div class="footer-title">{{ __('ui.home.contact_information') }}</div>
                     <div class="footer-contact">
-                        <div>{{ __('ui.home.city') }}</div>
+                        <a href="{{ $homeLocationUrl }}" target="_blank" rel="noopener noreferrer">
+                            <i class="bi bi-geo-alt-fill"></i> {{ __('ui.home.city') }}
+                        </a>
                         <a href="tel:+2001000004000"><i class="bi bi-telephone-fill"></i> +20 01000004000</a>
                         <a href="tel:0822222888"><i class="bi bi-telephone-fill"></i> 0822222888</a>
                         <a href="mailto:nuh90@gmail.com"><i class="bi bi-envelope-fill"></i> Mail: nuh90@gmail.com</a>
@@ -2195,12 +2247,15 @@
     <script>
     window.addEventListener('load', () => {
         setTimeout(() => {
-            document.getElementById('page-loader').classList.add('hidden');
+            document.getElementById('page-loader')?.classList.add('hidden');
         }, 800);
     });
 
     window.addEventListener('load', () => {
         const label = document.getElementById('aiLabel');
+        if (!label) {
+            return;
+        }
 
         setTimeout(() => {
             label.style.opacity = "1";
@@ -2225,6 +2280,9 @@
     });
     window.addEventListener('load', () => {
         const bubble = document.getElementById('aiBubble');
+        if (!bubble) {
+            return;
+        }
 
         // تظهر بعد ما الصفحة تفتح
         setTimeout(() => {
@@ -2295,7 +2353,8 @@
     });
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+    </script>
 </body>
 
 </html>
