@@ -2193,7 +2193,8 @@
     </div>
 
     @php
-        $homeLocationUrl = 'https://maps.app.goo.gl/uKMRqnYTmkXkZNkbA';
+        $hospitalMapsPlaceUrl = 'https://maps.app.goo.gl/uKMRqnYTmkXkZNkbA';
+        $homeLocationUrl = $hospitalMapsPlaceUrl;
         $homeLocationEmbedUrl = 'https://www.google.com/maps?q=29.013572,31.150207&z=16&output=embed';
     @endphp
 

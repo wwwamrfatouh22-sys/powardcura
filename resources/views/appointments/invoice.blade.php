@@ -473,7 +473,7 @@
 
 <main class="page">
     <div class="invoice-stack">
-        <a class="home-btn top-home-btn" href="{{ url('/') }}">
+        <a class="home-btn top-home-btn" href="/">
             <i class="bi bi-house-door-fill"></i>
             <span>Back to Home</span>
         </a>
